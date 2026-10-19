@@ -205,6 +205,19 @@ fieldset.stairs legend{font-size:12px;color:var(--muted);padding:0 4px}
       </div>
     </section>
 
+    <section id="stairPanel" hidden>
+      <div class="selbox">
+        <h2 style="margin:0">Escalier <em id="stTitle"></em></h2>
+        <p class="note" id="stInfo"></p>
+        <div class="row">
+          <button class="btn" id="stPrev">◀ 50 cm</button>
+          <button class="btn" id="stNext">50 cm ▶</button>
+          <button class="btn danger" id="stDel" style="margin-left:auto">Supprimer</button>
+        </div>
+        <p class="note">Glisse l'escalier pour le déplacer le long du bord, ou sur un autre bord.</p>
+      </div>
+    </section>
+
     <div class="more" id="more">
     <section>
       <h2>Catalogue</h2>
@@ -369,7 +382,7 @@ const fmt=(n,d=2)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFrac
 
 /* ================= État & historique ================= */
 let S={H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1};
-let firstRun=false;
+let firstRun=false, selStair=null;
 let tool="sel", curRef="PRA-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, multi=false;
 let sel=new Set(), hist=[], fut=[];
 const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name});
@@ -546,6 +559,7 @@ const M={
   leg:new THREE.MeshStandardMaterial({color:0xcfd5da,metalness:0.6,roughness:0.3}),
   gc:new THREE.MeshStandardMaterial({color:0x202326,metalness:0.3,roughness:0.5}),
   step:new THREE.MeshStandardMaterial({color:0x4a5057,roughness:0.8}),
+  stepSel:new THREE.MeshStandardMaterial({color:0xd9a710,roughness:0.6,emissive:0x3a2a00}),
   open:new THREE.MeshBasicMaterial({color:0xe0a800})
 };
 const ghost=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshBasicMaterial({color:0xe0a800,transparent:true,opacity:0.45,side:DS}));
@@ -601,7 +615,8 @@ function rebuild(commit){
     const [x1,z1,x2,z2]=segCells(s,2).map(v=>v*C), H=s.h, n=Math.max(2,Math.ceil(H/0.2)), rise=H/n, go=0.26;
     const nx=s.o==="v"?s.n:0, nz=s.o==="h"?s.n:0;
     for(let i=0;i<n;i++){ const dist=go*(i+0.5), y=H-rise*(i+1);
-      box(s.o==="h"?0.96:go,rise,s.o==="v"?0.96:go,M.step,(x1+x2)/2+nx*dist,y+rise/2,(z1+z2)/2+nz*dist); }
+      const sk=ekey(s.o,s.line,s.a);
+      box(s.o==="h"?0.96:go,rise,s.o==="v"?0.96:go,sk===selStair?M.stepSel:M.step,(x1+x2)/2+nx*dist,y+rise/2,(z1+z2)/2+nz*dist).userData.stair=sk; }
     const run=go*n;
     for(const [bx,bz,sx,sz] of [[x1,z1,s.o==="h"?0.04:0,s.o==="v"?0.04:0],[x2,z2,s.o==="h"?-0.04:0,s.o==="v"?-0.04:0]]){
       const ex=bx+sx+nx*run, ez=bz+sz+nz*run;
@@ -641,6 +656,24 @@ new ResizeObserver(resize).observe(cv.parentElement);
 const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
 function setRay(ev){ const r=cv.getBoundingClientRect(); ndc.set(((ev.clientX-r.left)/r.width)*2-1,-((ev.clientY-r.top)/r.height)*2+1); ray.setFromCamera(ndc,cam); }
 function onPlane(y){ const p=new THREE.Vector3(); return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-y),p)?p:null; }
+function hitAny(){ const h=ray.intersectObjects(world.children.filter(c=>c.userData.id||c.userData.stair)); return h.length?h[0].object.userData:null; }
+const stIdx=k=>S.stairs.findIndex(s=>ekey(s.o,s.line,s.a)===k);
+function validStair(c,i){
+  const ks=stairKeys(c), es=ks.map(k=>R.ex.get(k));
+  if(!es.every(e=>e&&e.empty&&e.n===c.n)||es[0].h!==es[1].h) return false;
+  return S.stairs.every((o,j)=>j===i||!stairKeys(o).some(k=>ks.includes(k)));
+}
+function stairNear(p,i){
+  const cand=R.out.filter(e=>e.empty&&e.o!=="d").map(e=>{ const [x1,z1,x2,z2]=segCells(e); return {e,d:Math.hypot(p.x-(x1+x2)/2*C,p.z-(z1+z2)/2*C)}; })
+    .filter(o=>o.d<2.5).sort((a,b)=>a.d-b.d).slice(0,6);
+  for(const {e} of cand){ const t=(e.o==="h"?p.x:p.z)/C, a0=Math.round(t-1);
+    for(const a of [a0,a0-1,a0+1,e.a,e.a-1]){ const c={o:e.o,line:e.line,a,n:e.n}; if(validStair(c,i)) return c; } }
+  return null;
+}
+function slideStair(d){ const i=stIdx(selStair); if(i<0) return; const c={...S.stairs[i],a:S.stairs[i].a+d};
+  if(!validStair(c,i)){ toast("Pas de place plus loin sur ce bord"); return; }
+  act(()=>{ S.stairs[i]=c; selStair=ekey(c.o,c.line,c.a); }); }
+function delStair(){ const i=stIdx(selStair); if(i<0) return; act(()=>{ S.stairs.splice(i,1); selStair=null; }); toast("Escalier supprimé"); }
 function hitId(){ const h=ray.intersectObjects(world.children.filter(c=>c.userData.id)); return h.length?h[0].object.userData.id:null; }
 const byId=id=>S.plats.find(p=>p.id===id);
 function placeAt(p){ const s=shapeOf(curRef,curRot); const x=Math.round(p.x/C-s.w/2), z=Math.round(p.z/C-s.d/2); return {x,z,abs:s.poly.map(([a,b])=>[a+x,b+z])}; }
@@ -702,8 +735,11 @@ cv.addEventListener("pointerdown",e=>{
   if(e.button>0) return;
   ptr={x:e.clientX,y:e.clientY,moved:false}; setRay(e);
   if(tool==="sel"){
-    const id=hitId();
-    if(id==null){ ptr.clear=true; return; }
+    const hit=hitAny();
+    if(!hit){ ptr.clear=true; return; }
+    if(hit.stair){ sel.clear(); selStair=hit.stair; const i=stIdx(hit.stair), rs=R.stairs.find(o=>ekey(o.o,o.line,o.a)===hit.stair);
+      ptr.sdrag={pre:snap(),i,h:rs?rs.h:S.H,moved:false}; ctl.enabled=false; cv.setPointerCapture(e.pointerId); rebuild(false); return; }
+    const id=hit.id; selStair=null;
     if(e.shiftKey||multi){ if(sel.has(id)){ sel.delete(id); rebuild(false); return; } sel.add(id); }
     else if(!sel.has(id)) sel=new Set([id]);
     const p=byId(id), start=onPlane(p.h);
@@ -718,6 +754,9 @@ cv.addEventListener("pointerdown",e=>{
 cv.addEventListener("pointermove",e=>{
   if(ptr&&Math.hypot(e.clientX-ptr.x,e.clientY-ptr.y)>6) ptr.moved=true;
   setRay(e);
+  if(ptr?.sdrag){ const d=ptr.sdrag, p=onPlane(d.h); if(!p||d.i<0) return;
+    const c=stairNear(p,d.i); if(!c) return; const k=ekey(c.o,c.line,c.a); if(k===selStair) return;
+    S.stairs[d.i]=c; selStair=k; d.moved=true; rebuild(false); return; }
   if(ptr?.drag){ const d=ptr.drag, p=onPlane(d.h); if(!p||!d.start) return;
     const dx=Math.round((p.x-d.start.x)/C), dz=Math.round((p.z-d.start.z)/C);
     if(dx===d.dx&&dz===d.dz) return; d.dx=dx; d.dz=dz; dragBad=!applyMove(d.ctx,dx,dz); rebuild(false); return; }
@@ -726,6 +765,7 @@ cv.addEventListener("pointermove",e=>{
 });
 function endPtr(e){
   if(!ptr) return; const P=ptr; ptr=null; ctl.enabled=true;
+  if(P.sdrag){ if(P.sdrag.moved) pushHist(P.sdrag.pre); rebuild(true); return; }
   if(P.drag){ const d=P.drag;
     if(d.dx||d.dz){ if(dragBad){ applyMove(d.ctx,0,0); toast("Emplacement occupé, déplacement annulé"); } else pushHist(d.pre); }
     dragBad=false; rebuild(true); return; }
@@ -739,11 +779,12 @@ cv.addEventListener("pointerleave",()=>{ if(!ptr){ ghost.visible=false; edgeMark
 
 function click(e,P){
   setRay(e);
-  if(tool==="sel"){ if(P.clear&&!multi&&!e.shiftKey&&sel.size){ sel.clear(); rebuild(false); } return; }
+  if(tool==="sel"){ if(P.clear&&!multi&&!e.shiftKey&&(sel.size||selStair)){ sel.clear(); selStair=null; rebuild(false); } return; }
   if(tool==="pose"){ const p=onPlane(S.H); if(!p) return; const c=placeAt(p);
     if(!fits(c.abs,new Set())){ toast("Emplacement occupé"); return; }
     act(()=>S.plats.push({id:S.nid++,ref:curRef,x:c.x,z:c.z,rot:curRot,h:S.H})); hover(e); return; }
-  if(tool==="eff"){ const id=hitId();
+  if(tool==="eff"){ const hs=hitAny(); if(hs&&hs.stair){ const i=stIdx(hs.stair); if(i>=0) act(()=>{ S.stairs.splice(i,1); if(selStair===hs.stair) selStair=null; }); return; }
+    const id=hitId();
     if(id!=null){ act(()=>{ S.plats=S.plats.filter(p=>p.id!==id); sel.delete(id); }); return; }
     const ed=pickEdge(e,R.out); const st=ed&&S.stairs.find(s=>stairKeys(s).includes(ed.k));
     if(st) act(()=>{ S.stairs=S.stairs.filter(s=>s!==st); }); return; }
@@ -781,7 +822,7 @@ function fillZone(z){
 
 /* ================= Panneau ================= */
 const LBL={sel:"Sélection",pose:"Poser",zone:"Zone",esc:"Escalier",bord:"Bord ouvert",eff:"Effacer"};
-const HINTS={sel:"Touchez un plateau pour le sélectionner, glissez-le pour le déplacer. Glissez ailleurs pour tourner la vue.",
+const HINTS={sel:"Touchez un plateau ou un escalier pour le sélectionner, glissez-le pour le déplacer. Glissez ailleurs pour tourner la vue.",
   pose:"Touchez la grille pour poser le plateau choisi. R pour pivoter.",
   zone:"Glissez sur la grille pour remplir un rectangle avec le plateau choisi.",
   esc:"Touchez un bord libre d'au moins 1 m pour poser un escalier, ou un escalier pour le retirer.",
@@ -819,7 +860,23 @@ const gm=document.getElementById("gcMode"); gm.onchange=()=>act(()=>{S.gc=gm.val
 const selRef=document.getElementById("selRef"), selH=document.getElementById("selH");
 selRef.innerHTML=`<option value="">Mélangées</option>`+Object.entries(BRANDS).map(([k,b])=>`<optgroup label="${b.nom}">${PLATEAUX.filter(r=>r.brand===k).map(r=>`<option value="${r.ref}">${r.ref}</option>`).join("")}</optgroup>`).join("");
 selH.innerHTML=`<option value="">Mélangées</option>`+hOpts;
+function updateStairPanel(){
+  const panel=document.getElementById("stairPanel"), i=selStair?stIdx(selStair):-1;
+  if(selStair&&i<0) selStair=null;
+  panel.hidden=!selStair; if(!selStair) return;
+  const s=S.stairs[i], rs=R.stairs.find(o=>ekey(o.o,o.line,o.a)===selStair), h=rs?rs.h:S.H;
+  const e=ESCALIERS.find(e=>h>=e.min&&h<=e.max);
+  const side=s.o==="h"?(s.n>0?"Bord avant (public)":"Bord arrière"):(s.n<0?"Bord gauche":"Bord droit");
+  document.getElementById("stTitle").textContent=e?e.ref:"";
+  document.getElementById("stInfo").textContent=`${side} · plancher à ${fmt(h)} m · 1 m de large${e?"":" · aucune référence pour cette hauteur"}`;
+  document.getElementById("stPrev").textContent=s.o==="h"?"◀ 50 cm":"▲ 50 cm";
+  document.getElementById("stNext").textContent=s.o==="h"?"50 cm ▶":"50 cm ▼";
+}
+document.getElementById("stPrev").onclick=()=>slideStair(-1);
+document.getElementById("stNext").onclick=()=>slideStair(1);
+document.getElementById("stDel").onclick=delStair;
 function updateSelPanel(){
+  updateStairPanel();
   const panel=document.getElementById("selPanel"); panel.hidden=!sel.size; if(!sel.size) return;
   const ps=S.plats.filter(p=>sel.has(p.id));
   document.getElementById("selCount").textContent=ps.length===1?ps[0].ref:`${ps.length} plateaux`;
@@ -869,8 +926,13 @@ document.addEventListener("keydown",e=>{
   if(mod&&k==="d"){ e.preventDefault(); duplicate(); return; }
   if(mod&&k==="a"){ e.preventDefault(); selectAll(); return; }
   if(mod) return;
+  if(selStair&&!sel.size){
+    if(k==="delete"||k==="backspace"){ e.preventDefault(); delStair(); return; }
+    const st=S.stairs[stIdx(selStair)], dk=st&&(st.o==="h"?{arrowleft:-1,arrowright:1}:{arrowup:-1,arrowdown:1})[k];
+    if(dk){ e.preventDefault(); slideStair(dk); return; }
+  }
   if(k==="delete"||k==="backspace"){ if(sel.size){ e.preventDefault(); delSel(); } return; }
-  if(k==="escape"){ sel.clear(); rebuild(false); setTool("sel"); return; }
+  if(k==="escape"){ sel.clear(); selStair=null; rebuild(false); setTool("sel"); return; }
   if(k==="r"){ sel.size?rotateSel():rotateCur(); return; }
   const arrows={arrowleft:[-1,0],arrowright:[1,0],arrowup:[0,-1],arrowdown:[0,1]};
   if(arrows[k]&&sel.size){ e.preventDefault(); moveSel(...arrows[k]); return; }

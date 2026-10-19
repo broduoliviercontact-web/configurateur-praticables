@@ -27,6 +27,10 @@ Ouvrir `index.html` dans un navigateur. Aucun serveur n'est nécessaire. Three.j
 
 Bouton « Plan de montage 2D » : plateaux numérotés avec leur référence, cotes générales et en chaîne, garde-corps, bords ouverts, jupes, escaliers (référence ESC), tableau des positions (X ; Y depuis le coin arrière gauche vu du public) et nomenclature avec les poids. « Imprimer » sort la feuille en A4 paysage (plan en page 1, tableaux en page 2).
 
+## Ordre de montage
+
+Liste par étapes calculée à partir du projet : préparation, pieds, plateaux rang par rang (numéros du plan), mise à niveau, jonctions, garde-corps (par côté, bords laissés ouverts), escaliers (référence et position), jupes, contrôle final. Chaque étape se coche (enregistré avec le projet) ; « Copier l'ordre de montage » pour l'envoyer à l'équipe. L'ordre de montage est aussi imprimé avec le plan de montage.
+
 ## Poids, charge et transport
 
 - Poids unitaire par référence ; poids total dans la nomenclature et sur le plan. Les poids marqués ≈ sont estimés : seuls PRA-R21 (42 kg), PRI-R21 (37 kg), PRA-C11 (24 kg), PRI-R15 (12,8 kg), PRA-T21D (20 kg), PS100 (1,2 kg) et GARD1 (5,48 kg) viennent des fiches revendeur.

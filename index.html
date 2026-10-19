@@ -150,6 +150,21 @@ dl.wt dt{color:var(--muted)} dl.wt dd{margin:0}
   .sheet{max-width:none;margin:0;padding:0;box-shadow:none}
   .sheet .cols{break-before:page;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
 }
+ol.mont{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:st}
+ol.mont>li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 10px;border:1px solid var(--line);border-radius:8px;padding:9px 10px;counter-increment:st}
+ol.mont>li.done{opacity:.55}
+ol.mont>li.done b{text-decoration:line-through}
+ol.mont input{width:20px;height:20px;margin:1px 0 0;accent-color:var(--accent)}
+ol.mont b{display:block;font-size:13px}
+ol.mont b::before{content:counter(st) ". ";color:var(--muted);font-family:var(--f-mono);font-weight:500}
+ol.mont ul{margin:4px 0 0;padding-left:16px;font-size:12px;color:var(--muted);display:grid;gap:2px}
+.sheet .mont-p{margin-top:16px;break-before:page}
+.sheet .mont-p ol{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 20px}
+.sheet .mont-p ol>li{break-inside:avoid;border-top:1px solid #d9dde1;padding-top:6px;color:#14181c}
+.sheet .mont-p ul li{color:#4b5560}
+.sheet .mont-p ol>li>b::before{content:"☐ ";font-weight:400}
+.sheet .mont-p ul{margin:3px 0 0;padding-left:16px;color:#4b5560}
+@media (max-width:760px){ .sheet .mont-p ol{grid-template-columns:1fr} }
 fieldset.stairs{border:1px solid var(--line);border-radius:9px;margin:0;padding:10px 12px 12px;display:grid;gap:8px;min-width:0}
 fieldset.stairs legend{font-size:12px;color:var(--muted);padding:0 4px}
 #npStairCount{font-family:var(--f-mono);color:var(--ink)}
@@ -408,6 +423,16 @@ label.ck.multi-sel{display:none}
       <p class="note" style="margin-top:10px">Règles du prototype : 4 pieds par plateau rectangulaire, 3 par triangle ; 1 jonction par mètre de bord commun entre plateaux de même hauteur ; 2 SGC par garde-corps ; 1 FGARD entre deux garde-corps alignés. Un plateau plus haut que son voisin reçoit un garde-corps sur ce bord. Jupe : sur les bords libres choisis, hors escaliers ; 1 pince tous les 50 cm + 1 par extrémité. Les poids précédés de ≈ sont estimés : seuls PRA-R21, PRI-R21, PRA-C11, PRI-R15, PRA-T21D, PS100 et GARD1 viennent des fiches revendeur. Les lignes « à compléter » attendent tes références.</p>
     </section>
 
+    <section id="montSec">
+      <h2>Ordre de montage <em id="montProg"></em></h2>
+      <ol class="mont" id="montList"></ol>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="montCopy">Copier l'ordre de montage</button>
+        <button class="btn" id="montReset">Tout décocher</button>
+      </div>
+      <p class="note" style="margin-top:8px">Les cases cochées sont enregistrées avec le projet, dans ce navigateur. Démontage : dans l'ordre inverse.</p>
+    </section>
+
     <section>
       <h2>Scène par défaut et raccourcis</h2>
       <div class="row" id="resetRow"></div>
@@ -533,7 +558,7 @@ const SITE="https://configurateur-praticables.vercel.app/", SALLE="https://salle
 const fmt=(n,d=2)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:2});
 
 /* ================= État & historique ================= */
-const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null});
+const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null,done:{}});
 let S=defaultS(), curPid=null, pendingLink=null;
 let firstRun=false, selStair=null;
 let tool="sel", curRef="PRI-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, multi=false;
@@ -582,6 +607,7 @@ function sanitize(d){
   o.H=HEIGHTS.includes(+o.H)?+o.H:1.0; o.gc=["kit","sep","none"].includes(o.gc)?o.gc:"kit";
   o.skirt=["none","front","visible","all"].includes(o.skirt)?o.skirt:"front"; o.cart=Math.min(40,Math.max(1,Math.round(num(o.cart))||8));
   o.name=String(o.name||"").slice(0,80);
+  o.done=Object.fromEntries(Object.entries(o.done&&typeof o.done==="object"?o.done:{}).filter(([k,v])=>/^[a-z]{2,12}$/.test(k)&&v===true));
   o.link=o.link&&typeof o.link==="object"?{id:String(o.link.id||"").slice(0,40),kind:String(o.link.kind||"").slice(0,20),name:String(o.link.name||"").slice(0,80)}:null;
   return o;
 }
@@ -852,7 +878,7 @@ function rebuild(commit){
     const [x1,z1,x2,z2]=e.o==="d"?[e.x1,e.z1,e.x2,e.z2]:segCells(e);
     const nx=e.o==="d"?e.nx:(e.o==="v"?e.n:0), nz=e.o==="d"?e.nz:(e.o==="h"?e.n:0), len=Math.hypot(x2-x1,z2-z1)*C, hh=Math.max(0.05,e.h-0.1);
     const m=box(len,hh,0.008,M.skirt,(x1+x2)/2*C+nx*0.012,hh/2,(z1+z2)/2*C+nz*0.012); m.rotation.y=-Math.atan2(z2-z1,x2-x1); }
-  renderBom(R); updateSelPanel(); updateHud();
+  renderBom(R); updateSelPanel(); updateHud(); if(typeof renderMontage==="function"&&$) renderMontage();
   if(commit) save();
 }
 
@@ -1396,6 +1422,62 @@ $("pShare").onclick=async()=>{
   catch(e){ toast("Ce navigateur ne sait pas compresser le lien"); }
 };
 
+/* ================= Ordre de montage ================= */
+const sideOf=e=>e.diag||e.o==="d"?"bord biais":e.o==="h"?(e.n>0?"avant (face public)":"arrière"):(e.n<0?"côté gauche (jardin)":"côté droit (cour)");
+function montageSteps(){
+  if(!S.plats.length||!R) return [];
+  const T=lastTot||totals(), rows=lastBom.filter(r=>r.length>1), q=ref=>rows.filter(r=>r[0]===ref).reduce((t,r)=>t+r[2],0);
+  const {L,x0,z0,x1,z1}=planData(), W=(x1-x0)*C, D=(z1-z0)*C, hs=[...new Set(S.plats.map(p=>p.h))].sort((a,b)=>a-b);
+  const st=[], add=(k,t,lines)=>st.push({k,t,lines:lines.filter(Boolean)});
+  add("prep","Préparation",[`Vérifier le sol : plat, dur, sans obstacle ; charge à prévoir ≈ ${kgTxt(T.kg)} kg de matériel`,
+    `Tracer l'emprise ${fmt(W,1)} × ${fmt(D,1)} m et repérer la face public`,`Approcher ${T.carts} chariot${T.carts>1?"s":""} de plateaux et les caisses (pieds, fixations, garde-corps)`]);
+  const pieds=rows.filter(r=>/^Pied/.test(r[1])||/^PS\d/.test(r[0]||""));
+  add("pieds","Pieds",[...pieds.map(r=>`${r[2]} × ${r[0]||"pied à compléter"} · ${r[1]}`),
+    "Plateau retourné sur un chariot ou des tréteaux : 4 pieds par plateau (3 par triangle), poignée rapide serrée",
+    hs.length>1?`Attention : ${hs.length} hauteurs (${hs.map(h=>fmt(h)+" m").join(", ")}), trier les plateaux par hauteur`:""]);
+  const byZ=new Map(); L.forEach(({p,g},i)=>{ const z=Math.min(...g.abs.map(v=>v[1])); if(!byZ.has(z)) byZ.set(z,[]); byZ.get(z).push({i:i+1,p}); });
+  const rang=[...byZ.entries()].sort((a,b)=>a[0]-b[0]).map(([z,arr],k)=>{ const refs=[...new Set(arr.map(o=>o.p.ref))].join(", "), hh=[...new Set(arr.map(o=>o.p.h))];
+    const nums=arr.map(o=>o.i), txt=nums.length>2&&nums[nums.length-1]-nums[0]===nums.length-1?`${nums[0]} à ${nums[nums.length-1]}`:nums.join(", ");
+    return `Rang ${k+1}${k===0?" (arrière)":k===byZ.size-1?" (avant)":""} à ${fmt((z-z0)*C,1)} m : plateaux ${txt} · ${refs}${hs.length>1?" · "+hh.map(h=>fmt(h)+" m").join("/"):""}`; });
+  add("plateaux",`Plateaux (${S.plats.length})`,["Poser de l'arrière vers l'avant, en partant du coin arrière gauche (vu du public), numéros du plan de montage",...rang]);
+  add("niveau","Mise à niveau",["Vérifier le niveau sur chaque rang et caler si besoin (pieds fixes)","Contrôler l'alignement du nez de scène"]);
+  const jn=rows.filter(r=>/Jonction|Bride/.test(r[1])).reduce((t,r)=>t+r[2],0);
+  if(jn) add("jonctions","Jonctions",[`${jn} jonction${jn>1?"s":""} ${rows.find(r=>/Jonction|Bride/.test(r[1]))?.[0]||""} entre plateaux voisins (1 par mètre de bord commun), serrées`]);
+  if(R.pieces.length){
+    const sides=new Map(); for(const g of R.pieces){ const k=sideOf(g); sides.set(k,(sides.get(k)||0)+1); }
+    const gcRows=rows.filter(r=>/^Garde-corps/.test(r[1])&&r[0]!=="SGC");
+    add("gc",`Garde-corps (${R.pieces.length})`,[
+      S.gc==="kit"?`Supports SGC 100 et inserts C0014 : fournis dans les kits${q("SGC 100")?` (+ ${q("SGC 100")} SGC 100 et ${q("C0014")} C0014 pour les GARD05)`:""}, à fixer en périphérie`
+        :`${q("C0014")} inserts C0014 dans le profil, ${q("SGC")} supports SGC fixés en périphérie`,
+      ...gcRows.map(r=>`${r[2]} × ${r[0]||"à compléter"} · ${r[1]}`),
+      `Répartition : ${[...sides].map(([k,n])=>`${k} ${n}`).join(" · ")}`,
+      q("FGARD")?`${q("FGARD")} raccords FGARD entre garde-corps alignés`:"",
+      R.open.length?`Laisser sans garde-corps : ${[...new Set(R.open.map(k=>R.ex.get(k)).filter(Boolean).map(sideOf))].join(", ")}`:""]);
+  }
+  if(R.stairs.length){
+    add("esc",`Escaliers (${R.stairs.length})`,[...R.stairs.map(s=>{ const e=ESCALIERS.find(e=>s.h>=e.min&&s.h<=e.max), [a,b,c,d]=segCells(s,2);
+      const pos=s.o==="h"?`à ${fmt((a-x0)*C,1)} m du bord gauche`:`à ${fmt((b-z0)*C,1)} m du bord arrière`;
+      return `${e?e.ref:"Escalier à compléter"} sur le bord ${sideOf(s)}, ${pos} · régler à ${fmt(s.h)} m, fixer au plateau, poser sa main courante`; })]);
+  }
+  const sk=skirtInfo(R);
+  if(sk.len) add("jupes","Jupes",[`${fmt(Math.ceil(sk.len*2-1e-9)/2,1)} m de jupe (${[...sk.byH].map(([h])=>"hauteur "+fmt(h)+" m").join(", ")}) avec ${sk.pinces} pinces`,
+    `Bords : ${[...new Set(sk.E.map(sideOf))].join(", ")}`]);
+  add("controle","Contrôle final",["Pieds et poignées serrés, aucun plateau ne bouge","Jonctions et garde-corps serrés, garde-corps testés à la main",
+    R.stairs.length?"Escaliers stables, marches et mains courantes fixées":"","Nez de scène balisé si besoin, zone dégagée, matériel en trop rangé"]);
+  return st;
+}
+function renderMontage(){
+  const el=$("montList"); if(!el) return; const st=montageSteps(), done=S.done||{};
+  el.innerHTML=st.map(s=>`<li class="${done[s.k]?"done":""}"><input type="checkbox" data-k="${s.k}" ${done[s.k]?"checked":""} aria-label="${escH(s.t)} fait"><div style="min-width:0"><b>${escH(s.t)}</b><ul>${s.lines.map(l=>`<li style="display:list-item;border:0;padding:0">${escH(l)}</li>`).join("")}</ul></div></li>`).join("")||`<li class="note" style="display:block">Pose un premier plateau pour obtenir l'ordre de montage.</li>`;
+  const n=st.filter(s=>done[s.k]).length; $("montProg").textContent=st.length?`${n} / ${st.length}`:"";
+}
+$("montList").addEventListener("change",e=>{ const k=e.target.dataset.k; if(!k) return; S.done=S.done||{}; if(e.target.checked) S.done[k]=true; else delete S.done[k]; save(); renderMontage(); });
+$("montReset").onclick=()=>{ S.done={}; save(); renderMontage(); toast("Ordre de montage remis à zéro"); };
+$("montCopy").onclick=()=>{
+  const txt=`${S.name||"Projet praticables"} — ordre de montage\n\n`+montageSteps().map((s,i)=>`${i+1}. ${s.t}\n`+s.lines.map(l=>"   - "+l).join("\n")).join("\n\n")+"\n\nDémontage : dans l'ordre inverse.";
+  navigator.clipboard.writeText(txt).then(()=>toast("Ordre de montage copié")).catch(()=>toast("Copie impossible ici"));
+};
+
 /* ================= Plan de montage 2D ================= */
 function planData(){
   const L=R.L.slice().sort((a,b)=>{ const za=Math.min(...a.g.abs.map(v=>v[1])), zb=Math.min(...b.g.abs.map(v=>v[1]));
@@ -1465,7 +1547,9 @@ function openPlan(){
     <div class="cols"><div><h2>Position des plateaux</h2><p class="note" style="margin:0 0 6px;color:#4b5560">X ; Y en mètres depuis le coin arrière gauche (vu du public), coin arrière gauche de chaque plateau.</p>
       <div class="tw"><table><tr class="hd"><td>N°</td><td>Réf.</td><td class="q">Haut.</td><td class="q">X ; Y</td><td class="q">Rot.</td></tr>${pos}</table></div></div>
       <div><h2>Matériel</h2><div class="tw"><table><tr class="hd"><td>Réf.</td><td>Désignation</td><td class="q">Qté</td><td class="q">kg</td></tr>${bomRows}</table></div>
-      <p class="note" style="color:#4b5560">Poids précédés de ≈ : estimés. Charge admissible limitée par ${T.weakest.ref}. ${S.cart} plateaux 2 × 1 par chariot.</p></div></div>`;
+      <p class="note" style="color:#4b5560">Poids précédés de ≈ : estimés. Charge admissible limitée par ${T.weakest.ref}. ${S.cart} plateaux 2 × 1 par chariot.</p></div></div>
+    <div class="mont-p"><h2>Ordre de montage</h2><ol>${montageSteps().map((s,i)=>`<li><b>${i+1}. ${escH(s.t)}</b><ul>${s.lines.map(l=>`<li>${escH(l)}</li>`).join("")}</ul></li>`).join("")}</ol>
+      <p class="note" style="color:#4b5560;margin-top:8px">Démontage : dans l'ordre inverse.</p></div>`;
   $("planModal").hidden=false; $("planClose").focus();
 }
 $("vPlan").onclick=openPlan; $("bPlan").onclick=openPlan;

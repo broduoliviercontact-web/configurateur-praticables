@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}[hidden]{display:none!important}</style>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;height:100%}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Configurateur Praticables ASD</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -85,10 +85,49 @@ details summary{cursor:pointer;font-size:12px;color:var(--muted)}
 details dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px;margin:8px 0 0}
 details dt{font-family:var(--f-mono)}
 details dd{margin:0;color:var(--muted)}
+.titlebar{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.titlebar>div{min-width:0}
+.titlebar .btn{white-space:nowrap;flex-shrink:0}
+[hidden]{display:none!important}
+.sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.more{display:flex;flex-direction:column;gap:20px}
+.grab{display:none}
+input.num,input.txt{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:7px 8px;font:inherit;min-width:0;width:100%;box-sizing:border-box}
+input.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+/* Assistant nouveau projet */
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:color-mix(in srgb,#0b0e11 55%,transparent);padding-block:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.dlg{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;width:min(620px,100%);max-height:100%;overflow-y:auto;box-sizing:border-box;padding:20px;display:grid;gap:16px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.dlg h3{font-family:var(--f-display);font-weight:700;font-size:24px;margin:0;line-height:1.05}
+.dlg .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.dims{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:end}
+.dims .x{padding-bottom:9px;color:var(--muted);font-family:var(--f-mono)}
+.presets{display:flex;gap:6px;flex-wrap:wrap}
+.presets button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:4px 10px;font:500 12px var(--f-mono);cursor:pointer}
+.presets button:hover{border-color:var(--accent)}
+.prev{border:1px solid var(--line);border-radius:9px;background:var(--scene);padding:10px;display:grid;gap:8px}
+.prev svg{width:100%;height:auto;max-height:220px;display:block}
+.prev .info{font-size:12px;color:var(--muted);line-height:1.5}
+.prev .info b{color:var(--ink);font-family:var(--f-mono);font-weight:500}
+.dlg .actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 @media (max-width:820px){
-  .app{grid-template-columns:1fr;grid-template-rows:52vh minmax(0,1fr)}
-  aside{border-left:0;border-top:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .app{display:block;position:relative}
+  .stage{position:absolute;left:0;right:0;top:0;bottom:var(--sheetH,190px)}
+  aside{position:fixed;left:0;right:0;bottom:0;z-index:20;max-height:calc(100% - 72px);border-left:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;box-shadow:0 -10px 28px rgba(0,0,0,.14);gap:12px;padding-block:0 max(12px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  aside:not(.open) .more{display:none}
+  .grab{display:flex;flex-direction:column;align-items:center;gap:5px;position:sticky;top:0;z-index:2;background:var(--panel);border:0;color:var(--muted);font:500 11px var(--f-body);padding:8px 0 4px;margin-inline:-16px;cursor:pointer}
+  .grab i{display:block;width:38px;height:4px;border-radius:2px;background:var(--line)}
+  h1{font-size:21px}
+  .seg kbd{display:none}
+  .seg button{padding:10px 2px}
+  .hint{top:50px;bottom:auto}
+  #toast{top:56px;bottom:auto}
+  .iconbtn .lbl{display:none}
+  .iconbtn{padding:6px 11px;font-size:15px}
+  .chip{padding:5px 8px}
+  .dlg{padding:16px}
+  .dlg .grid3{grid-template-columns:1fr 1fr}
 }
+@media (max-width:420px){ .dlg .grid3{grid-template-columns:1fr} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -102,17 +141,21 @@ details dd{margin:0;color:var(--muted)}
       <div class="chip">Surface <b id="hS">0 m²</b></div>
       <div class="chip" id="hInfo">Outil <b id="hT">Sélection</b></div>
       <div class="sp"></div>
-      <button class="iconbtn" id="undo" title="Annuler (Ctrl+Z)">↶ Annuler</button>
-      <button class="iconbtn" id="redo" title="Rétablir (Ctrl+Maj+Z)">↷ Rétablir</button>
+      <button class="iconbtn" id="undo" title="Annuler (Ctrl+Z)" aria-label="Annuler">↶<span class="lbl"> Annuler</span></button>
+      <button class="iconbtn" id="redo" title="Rétablir (Ctrl+Maj+Z)" aria-label="Rétablir">↷<span class="lbl"> Rétablir</span></button>
     </div>
     <div id="toast" hidden></div>
     <div class="hint" id="hint"></div>
   </div>
 
-  <aside>
-    <div>
-      <h1>Praticables <span>ASD</span></h1>
-      <div class="sub">Préparation de montage · prototype v2</div>
+  <aside id="sheet">
+    <button class="grab" id="sheetToggle" aria-expanded="false" aria-controls="more"><i></i><span>Catalogue, réglages et nomenclature</span></button>
+    <div class="titlebar">
+      <div>
+        <h1>Praticables <span>ASD</span></h1>
+        <div class="sub" id="projName">Préparation de montage</div>
+      </div>
+      <button class="btn primary" id="newProj">Nouveau projet</button>
     </div>
 
     <section>
@@ -151,6 +194,7 @@ details dd{margin:0;color:var(--muted)}
       </div>
     </section>
 
+    <div class="more" id="more">
     <section>
       <h2>Catalogue</h2>
       <div class="seg t2" id="brands"></div>
@@ -216,7 +260,65 @@ details dd{margin:0;color:var(--muted)}
         </dl>
       </details>
     </section>
+    </div>
   </aside>
+</div>
+
+<div class="modal" id="npModal" hidden>
+  <form class="dlg" id="npForm" role="dialog" aria-modal="true" aria-labelledby="npTitle" novalidate>
+    <div>
+      <h3 id="npTitle">Nouvelle scène</h3>
+      <p class="note" style="margin-top:6px">Indique la taille de la scène : le plancher est rempli automatiquement, puis tu peux tout retoucher.</p>
+    </div>
+    <label class="f">Nom du projet
+      <input class="txt" id="npName" type="text" placeholder="Ex. Festival — scène B" autocomplete="off">
+    </label>
+    <div>
+      <div class="dims">
+        <label class="f">Largeur (ouverture), m
+          <input class="num" id="npW" type="number" inputmode="decimal" min="0.5" max="40" step="0.5" value="8">
+        </label>
+        <span class="x">×</span>
+        <label class="f">Profondeur, m
+          <input class="num" id="npD" type="number" inputmode="decimal" min="0.5" max="40" step="0.5" value="4">
+        </label>
+      </div>
+      <div class="presets" id="npPresets" style="margin-top:8px"></div>
+    </div>
+    <div class="grid3">
+      <label class="f">Hauteur plancher <select id="npH"></select></label>
+      <label class="f">Plateau principal <select id="npRef"></select></label>
+      <label class="f">Garde-corps <select id="npGc">
+        <option value="kit">Kits GARD…100</option>
+        <option value="sep">GARD + SGC séparés</option>
+        <option value="none">Aucun</option>
+      </select></label>
+      <label class="f">Bord sans garde-corps <select id="npOpen">
+        <option value="front">Avant (face public)</option>
+        <option value="none">Aucun</option>
+        <option value="back">Arrière</option>
+        <option value="left">Côté gauche</option>
+        <option value="right">Côté droit</option>
+      </select></label>
+      <label class="f">Escalier d'accès <select id="npStair">
+        <option value="left">Côté gauche</option>
+        <option value="right">Côté droit</option>
+        <option value="back">Arrière</option>
+        <option value="both">Les deux côtés</option>
+        <option value="none">Aucun</option>
+      </select></label>
+      <label class="ck" style="align-self:end;padding-bottom:8px"><input type="checkbox" id="npFill" checked> Compléter avec des petits formats</label>
+    </div>
+    <div class="prev">
+      <svg id="npPrev" role="img" aria-label="Aperçu du plan"></svg>
+      <div class="info" id="npInfo"></div>
+    </div>
+    <div class="actions">
+      <span class="note" id="npWarn" style="margin-right:auto;align-self:center"></span>
+      <button type="button" class="btn" id="npCancel">Annuler</button>
+      <button type="submit" class="btn primary" id="npCreate">Créer la scène</button>
+    </div>
+  </form>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -257,11 +359,17 @@ const ESCALIERS = [
 const fmt=(n,d=2)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:2});
 
 /* ================= État & historique ================= */
-let S={H:1.0,gc:"kit",plats:[],open:[],stairs:[],nid:1};
+let S={H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1};
+let firstRun=false;
 let tool="sel", curRef="PRA-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, multi=false;
 let sel=new Set(), hist=[], fut=[];
-const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid});
-function restore(js){ Object.assign(S,JSON.parse(js)); sel=new Set([...sel].filter(id=>S.plats.some(p=>p.id===id))); }
+const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name});
+function restore(js){ Object.assign(S,JSON.parse(js)); sel=new Set([...sel].filter(id=>S.plats.some(p=>p.id===id))); syncInputs(); }
+function syncInputs(){
+  const hs=document.getElementById("height"), gm=document.getElementById("gcMode");
+  if(hs) hs.value=String(S.H); if(gm) gm.value=S.gc;
+  const pn=document.getElementById("projName"); if(pn) pn.textContent=S.name||"Préparation de montage";
+}
 function pushHist(pre){ hist.push(pre??snap()); if(hist.length>150) hist.shift(); fut=[]; }
 function act(fn){ const pre=snap(); const r=fn(); pushHist(pre); rebuild(true); return r; }
 function undo(){ if(!hist.length) return; fut.push(snap()); restore(hist.pop()); rebuild(true); toast("Annulé"); }
@@ -279,7 +387,7 @@ function sample(){
 function save(){ try{localStorage.setItem("praticables-asd-v2",JSON.stringify(S))}catch(e){} }
 function load(){
   try{ const s=JSON.parse(localStorage.getItem("praticables-asd-v2")); if(s&&s.plats){ S=Object.assign(S,s); return; } }catch(e){}
-  sample();
+  sample(); S.name="Exemple"; firstRun=true;
 }
 
 /* ================= Géométrie ================= */
@@ -510,7 +618,7 @@ function fit(view){
   if(S.plats.length){ const all=S.plats.flatMap(p=>geomOf(p).abs); mnx=Math.min(...all.map(v=>v[0]))*C; mxx=Math.max(...all.map(v=>v[0]))*C;
     mnz=Math.min(...all.map(v=>v[1]))*C; mxz=Math.max(...all.map(v=>v[1]))*C; mh=Math.max(...S.plats.map(p=>p.h)); }
   const cx=(mnx+mxx)/2, cz=(mnz+mxz)/2, span=Math.max(mxx-mnx,mxz-mnz,3);
-  ctl.target.set(cx,mh/2,cz);
+  ctl.target.set(cx,mh/2,cz); grid.position.set(Math.round(cx),0.001,Math.round(cz));
   if(view==="top") cam.position.set(cx,span*2.1+3,cz+0.01);
   else cam.position.set(cx+span*0.8,span*0.8+2,cz+span*1.25);
   ctl.update();
@@ -688,7 +796,7 @@ function refIcon(r){ const s=18, w=r.W*s, d=r.D*s, X=(44-w)/2, Y=(26-d)/2;
 function drawRefs(){
   document.querySelectorAll("#brands button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.b===brand));
   document.getElementById("refs").innerHTML=PLATEAUX.filter(r=>r.brand===brand).map(r=>`<button class="ref" data-r="${r.ref}" aria-pressed="${r.ref===curRef}">${refIcon(r)}<span><span class="code">${r.ref}</span><br><span class="d">${r.nom}${r.charge?" · "+r.charge:""}</span></span></button>`).join("");
-  document.querySelectorAll(".ref").forEach(b=>b.onclick=()=>{curRef=b.dataset.r; if(tool!=="zone") setTool("pose"); drawRefs();});
+  document.querySelectorAll(".ref").forEach(b=>b.onclick=()=>{curRef=b.dataset.r; if(tool!=="zone") setTool("pose"); drawRefs(); if(mq.matches) setSheet(false);});
   const s=shapeOf(curRef,curRot); document.getElementById("orient").textContent=`${curRef} posé en ${fmt(s.w*C,1)} × ${fmt(s.d*C,1)} m`;
 }
 function rotateCur(){ curRot=(curRot+1)%4; drawRefs(); toast(`Orientation ${curRot*90}°`); }
@@ -726,7 +834,8 @@ document.getElementById("vLbl").onclick=e=>{showLbl=!showLbl; e.target.textConte
 
 let toastT; function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2200); }
 document.getElementById("copy").onclick=()=>{
-  const txt=lastBom.map(r=>r.length===1?`\n${r[0].toUpperCase()}`:`${r[0]??"À compléter"}\t${r[1]}\t${r[2]}`).join("\n").trim();
+  const head=`${S.name||"Projet praticables"}\n`;
+  const txt=head+lastBom.map(r=>r.length===1?`\n${r[0].toUpperCase()}`:`${r[0]??"À compléter"}\t${r[1]}\t${r[2]}`).join("\n").trim();
   navigator.clipboard.writeText(txt).then(()=>toast("Liste copiée, prête à coller dans Excel")).catch(()=>toast("Copie impossible ici, sélectionne le tableau à la main"));
 };
 const row=document.getElementById("resetRow");
@@ -742,6 +851,7 @@ function bindReset(){
 bindReset();
 
 document.addEventListener("keydown",e=>{
+  if(!npModal.hidden){ if(e.key==="Escape") closeNP(); return; }
   if(e.target.closest("select,input,textarea")) return;
   const k=e.key.toLowerCase(), mod=e.ctrlKey||e.metaKey;
   if(mod&&k==="z"){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
@@ -757,7 +867,118 @@ document.addEventListener("keydown",e=>{
   const tl=["sel","pose","zone","esc","bord","eff"]; if(/^[1-6]$/.test(k)) setTool(tl[+k-1]);
 });
 
-load(); hs.value=S.H; gm.value=S.gc; drawRefs(); setTool("sel"); readTheme(); resize(); rebuild(true); fit();
+/* ================= Tiroir mobile ================= */
+const mq=matchMedia("(max-width:820px)");
+const sheet=document.getElementById("sheet"), tog=document.getElementById("sheetToggle"), appEl=document.querySelector(".app");
+function setSheet(open){ sheet.classList.toggle("open",open); tog.setAttribute("aria-expanded",String(open));
+  tog.querySelector("span").textContent=open?"Réduire le panneau":"Catalogue, réglages et nomenclature"; if(!open) sheet.scrollTop=0; }
+tog.onclick=()=>setSheet(!sheet.classList.contains("open"));
+new ResizeObserver(()=>{ if(mq.matches&&!sheet.classList.contains("open")) appEl.style.setProperty("--sheetH",sheet.offsetHeight+"px"); }).observe(sheet);
+mq.addEventListener("change",()=>{ setSheet(false); resize(); });
+
+/* ================= Assistant nouveau projet ================= */
+const npModal=document.getElementById("npModal"), $=id=>document.getElementById(id);
+const PRESETS=[[4,2],[6,4],[8,4],[8,6],[10,6],[12,8]];
+$("npPresets").innerHTML=PRESETS.map(([w,d])=>`<button type="button" data-w="${w}" data-d="${d}">${w} × ${d} m</button>`).join("");
+$("npPresets").querySelectorAll("button").forEach(b=>b.onclick=()=>{ $("npW").value=b.dataset.w; $("npD").value=b.dataset.d; npUpdate(); });
+$("npH").innerHTML=hOpts;
+$("npRef").innerHTML=Object.entries(BRANDS).map(([k,b])=>`<optgroup label="${b.nom}">${PLATEAUX.filter(r=>r.brand===k&&r.shape==="rect").map(r=>`<option value="${r.ref}">${r.ref} · ${fmt(r.W,0)} × ${fmt(r.D,0)}</option>`).join("")}</optgroup>`).join("");
+const readM=el=>{ const v=parseFloat(String(el.value).replace(",",".")); return isFinite(v)?Math.min(40,Math.max(0.5,Math.round(v/C)*C)):null; };
+
+function fillRefs(main){
+  const r0=REF[main], series=r0.brand==="ASD"?main.slice(0,3):null, seen=new Set([`${r0.W}x${r0.D}`]);
+  return PLATEAUX.filter(r=>r.brand===r0.brand&&r.shape==="rect"&&(!series||r.ref.startsWith(series)))
+    .sort((a,b)=>b.W*b.D-a.W*a.D).filter(r=>{ const k=`${r.W}x${r.D}`; if(seen.has(k)) return false; seen.add(k); return true; }).map(r=>r.ref);
+}
+function tryLayout(Wc,Dc,order){
+  const occ=new Uint8Array(Wc*Dc), out=[];
+  for(let z=0;z<Dc;z++) for(let x=0;x<Wc;x++){
+    if(occ[z*Wc+x]) continue;
+    for(const o of order){ const s=shapeOf(o.ref,o.rot); if(x+s.w>Wc||z+s.d>Dc) continue;
+      let ok=true; for(let j=0;j<s.d&&ok;j++) for(let i=0;i<s.w;i++) if(occ[(z+j)*Wc+x+i]){ok=false;break;}
+      if(!ok) continue;
+      for(let j=0;j<s.d;j++) for(let i=0;i<s.w;i++) occ[(z+j)*Wc+x+i]=1;
+      out.push({ref:o.ref,x,z,rot:o.rot}); break; }
+  }
+  return {plats:out, empty:occ.reduce((a,v)=>a+(v?0:1),0)};
+}
+function planScene(W,D,main,fill){
+  const Wc=Math.round(W/C), Dc=Math.round(D/C), extras=fill?fillRefs(main):[]; let best=null;
+  for(const r0 of [0,1]){
+    const order=[{ref:main,rot:r0},{ref:main,rot:1-r0}];
+    for(const e of extras) order.push({ref:e,rot:r0},{ref:e,rot:1-r0});
+    const L=tryLayout(Wc,Dc,order);
+    if(!best||L.empty<best.empty||(L.empty===best.empty&&L.plats.length<best.plats.length)) best={...L,Wc,Dc};
+  }
+  return best;
+}
+function sideKeys(side,Wc,Dc){ const k=[];
+  if(side==="front") for(let x=0;x<Wc;x++) k.push(`h:${x}:${Dc}`);
+  if(side==="back") for(let x=0;x<Wc;x++) k.push(`h:${x}:0`);
+  if(side==="left") for(let z=0;z<Dc;z++) k.push(`v:0:${z}`);
+  if(side==="right") for(let z=0;z<Dc;z++) k.push(`v:${Wc}:${z}`);
+  return k; }
+function stairsFor(opt,Wc,Dc){ const L={o:"v",line:0,a:0,n:-1}, Rr={o:"v",line:Wc,a:0,n:1}, B={o:"h",line:0,a:Math.max(0,Math.floor(Wc/2)-1),n:-1};
+  if(Dc<2&&(opt==="left"||opt==="right"||opt==="both")) return [];
+  if(Wc<2&&opt==="back") return [];
+  return {left:[L],right:[Rr],back:[B],both:[L,Rr],none:[]}[opt]; }
+
+let npPlan=null;
+function npUpdate(){
+  const W=readM($("npW")), D=readM($("npD")), main=$("npRef").value;
+  if(!W||!D){ $("npInfo").textContent="Indique une largeur et une profondeur entre 0,5 et 40 m."; $("npCreate").disabled=true; $("npPrev").innerHTML=""; return; }
+  $("npCreate").disabled=false;
+  npPlan=planScene(W,D,main,$("npFill").checked);
+  const {Wc,Dc,plats,empty}=npPlan, pad=1.6, vw=Wc+pad*2, vh=Dc+pad*2;
+  const refsUsed=[...new Set(plats.map(p=>p.ref))], shade=r=>0.85-refsUsed.indexOf(r)*0.22;
+  let svg=`<rect x="${pad}" y="${pad}" width="${Wc}" height="${Dc}" fill="none" stroke="var(--muted)" stroke-width="0.06" stroke-dasharray="0.2 0.15"/>`;
+  for(const p of plats){ const s=shapeOf(p.ref,p.rot);
+    svg+=`<rect x="${pad+p.x+0.05}" y="${pad+p.z+0.05}" width="${s.w-0.1}" height="${s.d-0.1}" rx="0.08" fill="var(--accent)" fill-opacity="${shade(p.ref)}" stroke="var(--ink)" stroke-opacity=".35" stroke-width="0.04"/>`; }
+  const openSide=$("npOpen").value, gcOn=$("npGc").value!=="none";
+  if(gcOn){ const seg=(x1,y1,x2,y2)=>svg+=`<line x1="${pad+x1}" y1="${pad+y1}" x2="${pad+x2}" y2="${pad+y2}" stroke="var(--ink)" stroke-width="0.14" stroke-linecap="round"/>`;
+    if(openSide!=="back") seg(0,0,Wc,0); if(openSide!=="front") seg(0,Dc,Wc,Dc);
+    if(openSide!=="left") seg(0,0,0,Dc); if(openSide!=="right") seg(Wc,0,Wc,Dc); }
+  for(const s of stairsFor($("npStair").value,Wc,Dc)){
+    const x=s.o==="v"?(s.n<0?pad-1.2:pad+Wc):pad+s.a, y=s.o==="v"?pad+s.a:pad-1.2, w=s.o==="v"?1.2:2, h=s.o==="v"?2:1.2;
+    svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="var(--panel)" stroke="var(--ink)" stroke-width="0.05"/>`;
+    for(let i=1;i<4;i++) svg+=s.o==="v"?`<line x1="${x+i*0.3}" y1="${y}" x2="${x+i*0.3}" y2="${y+h}" stroke="var(--ink)" stroke-width="0.03"/>`:`<line x1="${x}" y1="${y+i*0.3}" x2="${x+w}" y2="${y+i*0.3}" stroke="var(--ink)" stroke-width="0.03"/>`; }
+  svg+=`<text x="${pad+Wc/2}" y="${pad+Dc+1.05}" text-anchor="middle" font-size="0.62" font-family="IBM Plex Mono, monospace" fill="var(--muted)">PUBLIC · ${fmt(W,0)} m</text>`;
+  svg+=`<text x="${pad+Wc+1.05}" y="${pad+Dc/2}" text-anchor="middle" font-size="0.62" font-family="IBM Plex Mono, monospace" fill="var(--muted)" transform="rotate(90 ${pad+Wc+1.05} ${pad+Dc/2})">${fmt(D,0)} m</text>`;
+  $("npPrev").setAttribute("viewBox",`0 0 ${vw} ${vh}`); $("npPrev").innerHTML=svg;
+  const cnt=refsUsed.map(r=>`<b>${plats.filter(p=>p.ref===r).length} × ${r}</b>`).join(" · ");
+  const rawW=parseFloat(String($("npW").value).replace(",",".")), rawD=parseFloat(String($("npD").value).replace(",","."));
+  const rounded=(rawW!==W||rawD!==D)?` Dimensions arrondies au pas de 50 cm : ${fmt(W,0)} × ${fmt(D,0)} m.`:"";
+  $("npInfo").innerHTML=`${fmt(W*D,0)} m² · ${cnt||"aucun plateau"}${empty?` · <span style="color:var(--danger)">${fmt(empty*C*C,2)} m² non couverts, coche « Compléter » ou change de plateau</span>`:""}.${rounded}`;
+  const st=$("npStair").value; $("npWarn").textContent=st!=="none"&&!stairsFor(st,Wc,Dc).length?"Pas assez de longueur pour l'escalier choisi.":"";
+}
+["npW","npD","npH","npRef","npGc","npOpen","npStair","npFill"].forEach(id=>{ $(id).addEventListener("input",npUpdate); $(id).addEventListener("change",npUpdate); });
+let npReturn=null;
+function openNP(){
+  npReturn=document.activeElement;
+  $("npName").value=""; $("npH").value=String(S.H); $("npGc").value=S.gc;
+  if(REF[curRef].shape==="rect") $("npRef").value=curRef;
+  npModal.hidden=false; npUpdate(); setTimeout(()=>$("npW").focus(),30);
+}
+function closeNP(){ npModal.hidden=true; if(npReturn&&npReturn.focus) npReturn.focus(); }
+$("newProj").onclick=openNP;
+$("npCancel").onclick=closeNP;
+npModal.addEventListener("pointerdown",e=>{ if(e.target===npModal) closeNP(); });
+$("npForm").addEventListener("submit",e=>{
+  e.preventDefault(); npUpdate(); if(!npPlan) return;
+  const {Wc,Dc,plats}=npPlan, h=+$("npH").value, main=$("npRef").value;
+  act(()=>{
+    S.name=$("npName").value.trim()||`Scène ${fmt(Wc*C,0)} × ${fmt(Dc*C,0)} m`;
+    S.H=h; S.gc=$("npGc").value; sel.clear();
+    S.plats=plats.map(p=>({id:S.nid++,...p,h}));
+    S.stairs=stairsFor($("npStair").value,Wc,Dc);
+    S.open=sideKeys($("npOpen").value,Wc,Dc);
+  });
+  syncInputs(); curRef=main; brand=REF[main].brand; drawRefs(); setTool("sel");
+  closeNP(); fit("3d"); toast(`${S.name} créée · Annuler pour revenir au plan précédent`);
+});
+
+load(); syncInputs(); drawRefs(); setTool("sel"); readTheme(); resize(); rebuild(true); fit(); setSheet(false);
+if(firstRun) openNP();
 </script>
 
 </body>

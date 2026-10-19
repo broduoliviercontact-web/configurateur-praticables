@@ -4,8 +4,12 @@ Outil interne de préparation de montage : on pose des praticables en 3D, le sit
 
 ## Utilisation
 
+En ligne : https://configurateur-praticables.vercel.app/
+
 Ouvrir `index.html` dans un navigateur. Aucun serveur n'est nécessaire. Three.js est chargé depuis un CDN, il faut donc une connexion internet.
 
+- **Nouveau projet** : un assistant demande le nom, la largeur et la profondeur de la scène, la hauteur, le plateau principal, le bord sans garde-corps et l'escalier, montre un aperçu du plan et génère la scène (avec complément en petits formats si besoin)
+- Sur téléphone, le panneau devient un tiroir sous la vue 3D
 - Outils : Sélection, Poser, Zone, Escalier, Bord ouvert, Effacer (touches 1 à 6)
 - R pour pivoter, flèches pour déplacer, Suppr pour supprimer, Ctrl+D pour dupliquer, Ctrl+Z / Ctrl+Maj+Z pour annuler / rétablir
 - Le plan est enregistré dans le navigateur (localStorage)

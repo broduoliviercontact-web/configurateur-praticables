@@ -4,6 +4,8 @@ Outil interne de préparation de montage : on pose des praticables en 3D, le sit
 
 ## Utilisation
 
+À l'ouverture : une scène 8 × 8 m en PRA-R21 à 1 m, face public ouverte, escalier à l'arrière côté droit (vu du public). « Revenir à la scène 8 × 8 » la recharge.
+
 En ligne : https://configurateur-praticables.vercel.app/
 
 Ouvrir `index.html` dans un navigateur. Aucun serveur n'est nécessaire. Three.js est chargé depuis un CDN, il faut donc une connexion internet.

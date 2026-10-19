@@ -405,7 +405,7 @@ label.ck.multi-sel{display:none}
     </section>
 
     <section>
-      <h2>Exemple et raccourcis</h2>
+      <h2>Scène par défaut et raccourcis</h2>
       <div class="row" id="resetRow"></div>
       <details style="margin-top:12px">
         <summary>Raccourcis clavier</summary>
@@ -548,15 +548,15 @@ function act(fn){ const pre=snap(); const r=fn(); pushHist(pre); rebuild(true); 
 function undo(){ if(!hist.length) return; fut.push(snap()); restore(hist.pop()); rebuild(true); toast("Annulé"); }
 function redo(){ if(!fut.length) return; hist.push(snap()); restore(fut.pop()); rebuild(true); toast("Rétabli"); }
 
+/* scène par défaut : 8 × 8 m en PRA-R21 à 1 m, face public ouverte, escalier à l'arrière côté droit (vu du public) */
 function sample(){
-  S.plats=[]; S.open=[]; S.stairs=[]; S.nid=1;
-  for(let r=0;r<3;r++) for(let c=0;c<3;c++) S.plats.push({id:S.nid++,ref:"PRA-R21",x:c*4,z:r*2,rot:0,h:1.0});
-  S.plats.push({id:S.nid++,ref:"PRA-T21G",x:-4,z:4,rot:0,h:1.0});
-  S.plats.push({id:S.nid++,ref:"PRA-T21D",x:12,z:4,rot:0,h:1.0});
-  S.plats.push({id:S.nid++,ref:"PRA-R21",x:12,z:0,rot:0,h:0.6});
-  for(let x=-4;x<16;x++) S.open.push(`h:${x}:6`);
-  S.stairs.push({o:"v",line:0,a:0,n:-1});
+  const p=planScene(8,8,"PRA-R21",false);
+  S.nid=1; S.H=1.0; S.plats=p.plats.map(q=>({id:S.nid++,...q,h:1.0}));
+  S.open=sideKeys("front",p.Wc,p.Dc);
+  S.stairs=stairsFromSlots(new Set(["back-end"]),p.Wc,p.Dc).stairs;
 }
+/* ancien exemple (12 plateaux avec triangles) : remplacé par la scène 8 × 8 */
+const isOldSample=d=>Array.isArray(d?.plats)&&d.plats.length===12&&d.plats.some(p=>p.ref==="PRA-T21G"&&p.x===-4&&p.z===4)&&d.plats.some(p=>p.ref==="PRA-R21"&&p.x===12&&p.z===0&&+p.h===0.6);
 const PKEY="praticables-projets", CKEY="praticables-courant";
 const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 function readProjects(){ try{ const o=JSON.parse(localStorage.getItem(PKEY)); return o&&typeof o==="object"?o:{}; }catch(e){ return {}; } }
@@ -582,11 +582,13 @@ function sanitize(d){
 }
 function load(){
   const P=readProjects(); let pid=null; try{ pid=localStorage.getItem(CKEY); }catch(e){}
-  if(!Object.keys(P).length){ try{ const s=JSON.parse(localStorage.getItem("praticables-asd-v2")); if(s&&s.plats){ curPid=newId(); S=sanitize(s); S.name=S.name||"Mon premier projet"; return; } }catch(e){} }
+  let fix=false; for(const o of Object.values(P)) if(isOldSample(o.data)){ const keep=S; S=sanitize(o.data); sample(); S.name="Scène 8 × 8 m"; o.data=S; o.name=S.name; o.n=S.plats.length; S=keep; fix=true; }
+  if(fix) writeProjects(P);
+  if(!Object.keys(P).length){ try{ const s=JSON.parse(localStorage.getItem("praticables-asd-v2")); if(s&&s.plats&&!isOldSample(s)){ curPid=newId(); S=sanitize(s); S.name=S.name||"Mon premier projet"; return; } }catch(e){} }
   if(pid&&P[pid]){ curPid=pid; S=sanitize(P[pid].data); return; }
   const last=Object.entries(P).sort((a,b)=>b[1].t-a[1].t)[0];
   if(last){ curPid=last[0]; S=sanitize(last[1].data); return; }
-  curPid=newId(); sample(); S.name="Exemple"; firstRun=true;
+  curPid=newId(); sample(); S.name="Scène 8 × 8 m";
 }
 
 /* ================= Géométrie ================= */
@@ -863,11 +865,13 @@ function fit(view){
   let mnx=0,mnz=0,mxx=6,mxz=3,mh=1;
   if(S.plats.length){ const all=S.plats.flatMap(p=>geomOf(p).abs); mnx=Math.min(...all.map(v=>v[0]))*C; mxx=Math.max(...all.map(v=>v[0]))*C;
     mnz=Math.min(...all.map(v=>v[1]))*C; mxz=Math.max(...all.map(v=>v[1]))*C; mh=Math.max(...S.plats.map(p=>p.h)); }
-  const cx=(mnx+mxx)/2, cz=(mnz+mxz)/2, span=Math.max(mxx-mnx,mxz-mnz,3);
-  ctl.target.set(cx,mh/2,cz); grid.position.set(Math.round(cx),0.001,Math.round(cz));
-  const k=cam.aspect<1?Math.max(1,0.85/cam.aspect):1;
-  if(view==="top") cam.position.set(cx,(span*2.1+3)*k,cz+0.01);
-  else cam.position.set(cx+span*0.8*k,(span*0.8+2)*k,cz+span*1.25*k);
+  const m=S.stairs.length?1.6:0.6; mnx-=m; mnz-=m; mxx+=m; mxz+=m; // marge pour escaliers et garde-corps
+  const cx=(mnx+mxx)/2, cz=(mnz+mxz)/2;
+  ctl.target.set(cx,mh*0.4,cz); grid.position.set(Math.round(cx),0.001,Math.round(cz));
+  // recul calculé pour que toute l'emprise tienne dans l'écran, en largeur comme en hauteur
+  const r=Math.hypot(mxx-mnx,mxz-mnz,mh+1)/2, vf=cam.fov*Math.PI/180, hf=2*Math.atan(Math.tan(vf/2)*cam.aspect), dist=r/Math.sin(Math.min(vf,hf)/2)*(cam.aspect<1?0.8:0.92);
+  const dir=view==="top"?new THREE.Vector3(0,1,0.002):new THREE.Vector3(0.5,0.62,0.85);
+  cam.position.copy(ctl.target).addScaledVector(dir.normalize(),dist);
   ctl.update();
 }
 function resize(){ const r=cv.parentElement.getBoundingClientRect(); renderer.setSize(r.width,r.height,false); cam.aspect=r.width/Math.max(1,r.height); cam.updateProjectionMatrix(); }
@@ -1132,7 +1136,7 @@ document.getElementById("copy").onclick=()=>{
 };
 const row=document.getElementById("resetRow");
 function bindReset(){
-  row.innerHTML=`<button class="btn" id="sample">Charger l'exemple</button><button class="btn danger" id="clear">Tout effacer</button>`;
+  row.innerHTML=`<button class="btn" id="sample">Revenir à la scène 8 × 8</button><button class="btn danger" id="clear">Tout effacer</button>`;
   document.getElementById("sample").onclick=()=>{ act(()=>{ sel.clear(); sample(); }); fit(); };
   document.getElementById("clear").onclick=()=>{
     row.innerHTML=`<span class="note">Effacer tout le plan ?</span><button class="btn danger" id="yes">Oui, effacer</button><button class="btn" id="no">Annuler</button>`;
@@ -1242,7 +1246,7 @@ function stairsFromSlots(ids,Wc,Dc){
     out.push(s); }
   return {stairs:out,skipped};
 }
-let npSlots=new Set(["left-a0"]);
+let npSlots=new Set(["back-end"]);
 function drawSlotButtons(Wc,Dc){
   const g=$("npStairs");
   g.innerHTML=SIDES.map(s=>`<span class="side">${s.lbl}</span>`+s.pos.map(([p,l])=>{ const id=`${s.id}-${p}`, ok=!!slotStair(SLOTS.find(x=>x.id===id),Wc,Dc);
@@ -1504,8 +1508,9 @@ async function handleHash(){
 }
 addEventListener("hashchange",handleHash);
 
-load(); syncInputs(); drawRefs(); setTool("sel"); readTheme(); resize(); rebuild(true); fit(); setSheet(false); renderProjects();
-handleHash().then(done=>{ if(!done&&firstRun) openNP(); });
+load(); syncInputs(); drawRefs(); setTool("sel"); readTheme(); resize(); rebuild(true); setSheet(false); renderProjects();
+requestAnimationFrame(()=>requestAnimationFrame(()=>{ resize(); fit(); }));
+handleHash();
 </script>
 
 </body>

@@ -25,7 +25,7 @@
   --accent:#f2bd1d; --accent-ink:#14181c; --scene:#21272e; --danger:#e2694f; --ok:#5cb784; color-scheme:dark}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px}
-.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 370px}
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(280px,32vw,370px)}
 .stage{position:relative;min-width:0;min-height:0;background:var(--scene)}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 .hud{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;pointer-events:none}
@@ -120,23 +120,79 @@ fieldset.stairs legend{font-size:12px;color:var(--muted);padding:0 4px}
 .stairgrid .tools button{flex:0 0 auto;padding:5px 10px;font-size:11px}
 #npPrev [data-slot]{cursor:pointer}
 .dlg .actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
-@media (max-width:820px){
+.seg .sm{display:none}
+.selbox .acts{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+label.ck.multi-sel{display:none}
+.acts .ic{display:none}
+/* Tiroir bas : téléphones et tablettes en portrait */
+@media (max-width:820px) and (orientation:portrait){
   .app{display:block;position:relative}
-  .stage{position:absolute;left:0;right:0;top:0;bottom:var(--sheetH,190px)}
-  aside{position:fixed;left:0;right:0;bottom:0;z-index:20;max-height:calc(100% - 72px);border-left:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;box-shadow:0 -10px 28px rgba(0,0,0,.14);gap:12px;padding-block:0 max(12px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .stage{position:absolute;left:0;right:0;top:0;bottom:var(--sheetH,150px)}
+  aside{position:fixed;left:0;right:0;bottom:0;z-index:20;max-height:calc(100% - 64px);border-left:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;box-shadow:0 -10px 28px rgba(0,0,0,.14);gap:10px;padding-block:0 max(10px,env(safe-area-inset-bottom,0px));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  aside.open{gap:16px}
   aside:not(.open) .more{display:none}
-  .grab{display:flex;flex-direction:column;align-items:center;gap:5px;position:sticky;top:0;z-index:2;background:var(--panel);border:0;color:var(--muted);font:500 11px var(--f-body);padding:8px 0 4px;margin-inline:-16px;cursor:pointer}
-  .grab i{display:block;width:38px;height:4px;border-radius:2px;background:var(--line)}
-  h1{font-size:21px}
-  .seg kbd{display:none}
-  .seg button{padding:10px 2px}
-  .hint{top:50px;bottom:auto}
-  #toast{top:56px;bottom:auto}
+  .grab{display:flex;flex-direction:row;justify-content:center;align-items:center;gap:8px;position:sticky;top:0;z-index:2;background:var(--panel);border:0;color:var(--muted);font:500 11px var(--f-body);padding:8px 0 2px;margin-inline:-12px;cursor:pointer;min-height:28px}
+  .grab i{display:block;width:34px;height:4px;border-radius:2px;background:var(--line)}
+  .titlebar{gap:8px}
+  h1{font-size:18px}
+  .sub{font-size:11px;margin-top:2px}
+  .titlebar .btn{padding:8px 12px;font-size:13px}
+  #toolsSec h2{display:none}
+  .seg.t3{grid-template-columns:repeat(6,1fr)}
+  .seg button{padding:11px 1px;font-size:12px;min-height:42px}
+  .seg kbd,.seg .lg{display:none}
+  .seg .sm{display:inline}
+  label.ck.multi-top{display:none}
+  label.ck.multi-sel{display:flex}
+  .stairhelp{display:none}
+  .hint{bottom:8px;top:auto;left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:11px;text-align:center;line-height:1.35}
+  #toast{top:54px;bottom:auto}
   .iconbtn .lbl{display:none}
-  .iconbtn{padding:6px 11px;font-size:15px}
-  .chip{padding:5px 8px}
-  .dlg{padding:16px}
+  .iconbtn{padding:7px 12px;font-size:15px;min-height:36px}
+  .chip{padding:6px 8px}
+  .refs{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  .ref{padding:9px}
+}
+/* Bloc de sélection compact (téléphone portrait et paysage) */
+@media (max-width:820px) and (orientation:portrait), (orientation:landscape) and (max-height:520px){
+  .selbox{padding:10px;gap:8px;border-radius:10px;min-width:0}
+  .selbox h2{font-size:12px}
+  .selbox .grid2{gap:8px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .selbox .row{flex-wrap:wrap;align-items:center!important;gap:6px;min-width:0}
+  .pad{display:flex;gap:4px}
+  .pad button{width:40px;height:40px;font-size:15px}
+  .pad .l{order:1}.pad .u{order:2}.pad .d{order:3}.pad .r{order:4}
+  .selbox .acts{flex-direction:row;gap:4px;margin-left:auto}
+  .selbox .acts .btn{width:42px;height:40px;padding:0;font-size:17px;line-height:1}
+  .acts .tx{display:none}
+  .acts .ic{display:inline}
+}
+/* Saisie : 16 px sur écran tactile pour éviter le zoom automatique d'iOS */
+@media (pointer:coarse){ input.num,input.txt,select{font-size:16px} }
+/* Assistant plein écran sur téléphone, bouton Créer toujours visible */
+@media (max-width:640px){
+  .modal{place-items:end stretch;padding:0;padding-top:max(12px,env(safe-area-inset-top,0px))}
+  .dlg{width:100%;border-radius:14px 14px 0 0;max-height:100%;padding:16px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));gap:14px;border-bottom:0}
+  .dlg h3{font-size:21px}
   .dlg .grid3{grid-template-columns:1fr 1fr}
+  .dlg .actions{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);margin-inline:-16px;padding:10px 16px max(12px,env(safe-area-inset-bottom,0px))}
+  .dlg .actions .btn{padding:11px 14px}
+  #npWarn{flex-basis:100%;order:-1}
+  .stairgrid button{padding:10px 2px}
+}
+/* Téléphone en paysage : panneau latéral compact */
+@media (orientation:landscape) and (max-height:520px){
+  .app{grid-template-columns:minmax(0,1fr) clamp(260px,36vw,340px)}
+  aside{padding-block:10px 16px;padding-left:12px;gap:12px}
+  h1{font-size:18px}
+  .titlebar .btn{padding:6px 10px;font-size:12px}
+  .seg button{padding:7px 2px}
+  .seg kbd{display:none}
+  .hint{display:none}
+  .chip{padding:4px 8px}
+  .iconbtn .lbl{display:none}
+  .dlg{max-height:100%;padding:14px}
+  .modal{padding-block:8px}
 }
 @media (max-width:420px){ .dlg .grid3{grid-template-columns:1fr} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -169,17 +225,17 @@ fieldset.stairs legend{font-size:12px;color:var(--muted);padding:0 4px}
       <button class="btn primary" id="newProj">Nouveau projet</button>
     </div>
 
-    <section>
+    <section id="toolsSec">
       <h2>Outil</h2>
       <div class="seg t3" id="tools">
-        <button data-t="sel">Sélection<kbd>1</kbd></button>
-        <button data-t="pose">Poser<kbd>2</kbd></button>
-        <button data-t="zone">Zone<kbd>3</kbd></button>
-        <button data-t="esc">Escalier<kbd>4</kbd></button>
-        <button data-t="bord">Bord ouvert<kbd>5</kbd></button>
-        <button data-t="eff">Effacer<kbd>6</kbd></button>
+        <button data-t="sel" aria-label="Sélection"><span class="lg">Sélection</span><span class="sm">Sélect.</span><kbd>1</kbd></button>
+        <button data-t="pose" aria-label="Poser"><span class="lg">Poser</span><span class="sm">Poser</span><kbd>2</kbd></button>
+        <button data-t="zone" aria-label="Zone"><span class="lg">Zone</span><span class="sm">Zone</span><kbd>3</kbd></button>
+        <button data-t="esc" aria-label="Escalier"><span class="lg">Escalier</span><span class="sm">Escalier</span><kbd>4</kbd></button>
+        <button data-t="bord" aria-label="Bord ouvert"><span class="lg">Bord ouvert</span><span class="sm">Bord</span><kbd>5</kbd></button>
+        <button data-t="eff" aria-label="Effacer"><span class="lg">Effacer</span><span class="sm">Effacer</span><kbd>6</kbd></button>
       </div>
-      <label class="ck" style="margin-top:8px"><input type="checkbox" id="multi"> Sélection multiple (ou Maj + clic)</label>
+      <label class="ck multi-top" style="margin-top:8px"><input type="checkbox" id="multi"> Sélection multiple (ou Maj + clic)</label>
     </section>
 
     <section id="selPanel" hidden>
@@ -196,12 +252,13 @@ fieldset.stairs legend{font-size:12px;color:var(--muted);padding:0 4px}
             <button class="d" data-m="0,1" aria-label="Vers le bas">↓</button>
             <button class="r" data-m="1,0" aria-label="Vers la droite">→</button>
           </div>
-          <div class="row" style="flex-direction:column;align-items:stretch;gap:6px">
-            <button class="btn" id="sRot">Pivoter</button>
-            <button class="btn" id="sDup">Dupliquer</button>
-            <button class="btn danger" id="sDel">Supprimer</button>
+          <div class="acts">
+            <button class="btn" id="sRot" title="Pivoter (R)" aria-label="Pivoter"><span class="tx">Pivoter</span><span class="ic">↻</span></button>
+            <button class="btn" id="sDup" title="Dupliquer (Ctrl+D)" aria-label="Dupliquer"><span class="tx">Dupliquer</span><span class="ic">⧉</span></button>
+            <button class="btn danger" id="sDel" title="Supprimer (Suppr)" aria-label="Supprimer"><span class="tx">Supprimer</span><span class="ic">✕</span></button>
           </div>
         </div>
+        <label class="ck multi-sel"><input type="checkbox" id="multi2"> Ajouter d'autres plateaux à la sélection</label>
       </div>
     </section>
 
@@ -214,7 +271,7 @@ fieldset.stairs legend{font-size:12px;color:var(--muted);padding:0 4px}
           <button class="btn" id="stNext">50 cm ▶</button>
           <button class="btn danger" id="stDel" style="margin-left:auto">Supprimer</button>
         </div>
-        <p class="note">Glisse l'escalier pour le déplacer le long du bord, ou sur un autre bord.</p>
+        <p class="note stairhelp">Glisse l'escalier pour le déplacer le long du bord, ou sur un autre bord.</p>
       </div>
     </section>
 
@@ -837,7 +894,9 @@ function updateHud(){
   document.getElementById("undo").disabled=!hist.length; document.getElementById("redo").disabled=!fut.length;
 }
 document.querySelectorAll("#tools button").forEach(b=>b.onclick=()=>setTool(b.dataset.t));
-document.getElementById("multi").onchange=e=>{multi=e.target.checked; setTool("sel");};
+function setMulti(v){ multi=v; document.getElementById("multi").checked=v; document.getElementById("multi2").checked=v; setTool("sel"); }
+document.getElementById("multi").onchange=e=>setMulti(e.target.checked);
+document.getElementById("multi2").onchange=e=>setMulti(e.target.checked);
 
 document.getElementById("brands").innerHTML=Object.entries(BRANDS).map(([k,b])=>`<button data-b="${k}">${b.nom}</button>`).join("");
 document.querySelectorAll("#brands button").forEach(b=>b.onclick=()=>{brand=b.dataset.b; drawRefs();});
@@ -940,7 +999,7 @@ document.addEventListener("keydown",e=>{
 });
 
 /* ================= Tiroir mobile ================= */
-const mq=matchMedia("(max-width:820px)");
+const mq=matchMedia("(max-width:820px) and (orientation:portrait)");
 const sheet=document.getElementById("sheet"), tog=document.getElementById("sheetToggle"), appEl=document.querySelector(".app");
 function setSheet(open){ sheet.classList.toggle("open",open); tog.setAttribute("aria-expanded",String(open));
   tog.querySelector("span").textContent=open?"Réduire le panneau":"Catalogue, réglages et nomenclature"; if(!open) sheet.scrollTop=0; }

@@ -978,8 +978,10 @@ bindReset();
 
 document.addEventListener("keydown",e=>{
   if(!npModal.hidden){ if(e.key==="Escape") closeNP(); return; }
-  if(e.target.closest("select,input,textarea")) return;
-  const k=e.key.toLowerCase(), mod=e.ctrlKey||e.metaKey;
+  const k=(e.key||"").toLowerCase(), mod=e.ctrlKey||e.metaKey;
+  if(e.target.closest('textarea,input[type="text"],input[type="number"]')) return;
+  if(e.target.closest("select,input")&&!(mod&&(k==="z"||k==="y"))) return;
+  if(mod&&(k==="z"||k==="y")&&e.target.closest("select,input")) e.target.blur();
   if(mod&&k==="z"){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
   if(mod&&k==="y"){ e.preventDefault(); redo(); return; }
   if(mod&&k==="d"){ e.preventDefault(); duplicate(); return; }

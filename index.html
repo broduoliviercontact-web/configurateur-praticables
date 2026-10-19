@@ -108,6 +108,48 @@ input.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .prev svg{width:100%;height:auto;max-height:220px;display:block}
 .prev .info{font-size:12px;color:var(--muted);line-height:1.5}
 .prev .info b{color:var(--ink);font-family:var(--f-mono);font-weight:500}
+tr.hd td{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-top:0}
+td.q.kg{width:58px;white-space:nowrap}
+dl.wt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;font-size:12px;margin:0 0 12px}
+dl.wt dt{color:var(--muted)} dl.wt dd{margin:0}
+.plist{display:grid;gap:4px;margin:8px 0}
+.pitem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:6px 8px}
+.pitem.cur{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.pitem b{display:block;font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pitem span{font-size:11px;color:var(--muted)}
+.pitem .pa{display:flex;gap:4px}
+.pitem .pa button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:6px;min-width:32px;height:30px;font:500 12px var(--f-body);cursor:pointer;padding:0 8px}
+.pitem .pa button.del{color:var(--danger)}
+.linkbox{display:grid;gap:6px;margin-top:8px}
+.salle{border:1px solid var(--line);border-radius:9px;padding:10px 12px;display:grid;gap:8px;margin-top:12px}
+.salle h3{margin:0;font:600 13px var(--f-body)}
+/* Plan de montage : feuille blanche, quel que soit le thème */
+.planwrap{position:fixed;inset:0;z-index:60;background:var(--bg);overflow:auto;padding-bottom:max(16px,env(safe-area-inset-bottom,0px))}
+.planbar{position:sticky;top:0;z-index:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);border-bottom:1px solid var(--line);padding-block:max(10px,env(safe-area-inset-top,0px)) 10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.planbar b{font-family:var(--f-display);font-size:20px}
+.planbar .sp{flex:1}
+.sheet{background:#fff;color:#14181c;max-width:1120px;margin:16px auto;padding:24px;box-sizing:border-box;box-shadow:0 2px 14px rgba(0,0,0,.12);font:12px/1.4 var(--f-body)}
+.sheet h1{font-family:var(--f-display);font-size:26px;margin:0;color:#14181c}
+.sheet .meta{color:#4b5560;margin:4px 0 12px;display:flex;flex-wrap:wrap;gap:4px 16px}
+.sheet .meta b{color:#14181c;font-family:var(--f-mono);font-weight:500}
+.sheet svg{width:100%;height:auto;display:block}
+.sheet .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:20px;margin-top:16px}
+.sheet h2{color:#4b5560;margin:0 0 6px}
+.sheet table{font-size:11px}
+.sheet td{border-bottom:1px solid #d9dde1;padding:3px 4px 3px 0;color:#14181c}
+.sheet tr.cat td{color:#4b5560}
+.sheet .tw{overflow-x:auto}
+.sheet td.q{white-space:nowrap;padding-left:12px}
+@media (max-width:760px){ .sheet{margin:0;padding:14px;box-shadow:none} .sheet .cols{grid-template-columns:1fr} }
+@media print{
+  @page{size:A4 landscape;margin:9mm}
+  html,body{height:auto!important;background:#fff!important}
+  :root{padding:0!important}
+  .app,.modal,#toast,.planbar{display:none!important}
+  .planwrap{position:static!important;overflow:visible!important;background:#fff!important;padding:0!important}
+  .sheet{max-width:none;margin:0;padding:0;box-shadow:none}
+  .sheet .cols{break-before:page;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+}
 fieldset.stairs{border:1px solid var(--line);border-radius:9px;margin:0;padding:10px 12px 12px;display:grid;gap:8px;min-width:0}
 fieldset.stairs legend{font-size:12px;color:var(--muted);padding:0 4px}
 #npStairCount{font-family:var(--f-mono);color:var(--ink)}
@@ -276,6 +318,27 @@ label.ck.multi-sel{display:none}
     </section>
 
     <div class="more" id="more">
+    <section id="projSec">
+      <h2>Projets</h2>
+      <label class="f">Nom du projet <input class="txt" id="pName" type="text" maxlength="80" autocomplete="off" placeholder="Ex. Festival — scène B"></label>
+      <div class="plist" id="pList"></div>
+      <div class="row">
+        <button class="btn" id="pExport">Exporter le fichier</button>
+        <button class="btn" id="pImportBtn">Importer un fichier</button>
+        <input type="file" id="pImport" accept=".json,application/json" hidden>
+        <button class="btn" id="pShare">Lien de partage</button>
+      </div>
+      <div class="linkbox" id="pShareBox" hidden>
+        <input class="txt" id="pShareOut" type="text" readonly aria-label="Lien de partage">
+        <p class="note" id="pShareNote"></p>
+      </div>
+      <div class="salle">
+        <h3>Salle 3D</h3>
+        <p class="note" id="salleInfo"></p>
+        <div class="row"><button class="btn primary" id="toSalle">Envoyer vers Salle 3D</button><a class="btn" id="salleLink" href="#" target="_blank" rel="opener" hidden>Ouvrir Salle 3D avec la scène</a></div>
+      </div>
+    </section>
+
     <section>
       <h2>Catalogue</h2>
       <div class="seg t2" id="brands"></div>
@@ -298,6 +361,19 @@ label.ck.multi-sel{display:none}
         </select>
       </label>
     </section>
+    <section class="grid2">
+      <label class="f">Jupes
+        <select id="skirtMode">
+          <option value="none">Aucune</option>
+          <option value="front">Face public</option>
+          <option value="visible">Face et côtés</option>
+          <option value="all">Tout le tour</option>
+        </select>
+      </label>
+      <label class="f">Plateaux 2 × 1 par chariot
+        <input class="num" id="cartCap" type="number" inputmode="numeric" min="1" max="40" step="1" value="8">
+      </label>
+    </section>
     <div class="warn">Les garde-corps GARD sont décrits comme réservés aux espaces techniques et non plus autorisés pour un espace scène. Vérifie la référence à utiliser avec ASD avant le montage.</div>
 
     <section>
@@ -307,6 +383,7 @@ label.ck.multi-sel{display:none}
         <button class="btn" id="vTop">Dessus</button>
         <button class="btn" id="vLegs">Masquer pieds</button>
         <button class="btn" id="vLbl">Masquer étiquettes</button>
+        <button class="btn primary" id="vPlan">Plan de montage 2D</button>
       </div>
     </section>
 
@@ -316,16 +393,19 @@ label.ck.multi-sel{display:none}
         <div><b id="tP">0</b><span>plateaux</span></div>
         <div><b id="tG">0</b><span>garde-corps</span></div>
         <div><b id="tE">0</b><span>escaliers</span></div>
+        <div><b id="tK">0</b><span>kg</span></div>
       </div>
-      <table id="bom"></table>
+      <dl class="wt" id="wtBox"></dl>
+      <div class="tw"><table id="bom"></table></div>
       <div class="row" style="margin-top:12px">
         <button class="btn primary" id="copy">Copier la liste</button>
+        <button class="btn" id="bPlan">Plan de montage</button>
       </div>
-      <p class="note" style="margin-top:10px">Règles du prototype : 4 pieds par plateau rectangulaire, 3 par triangle ; 1 jonction par mètre de bord commun entre plateaux de même hauteur ; 2 SGC par garde-corps ; 1 FGARD entre deux garde-corps alignés. Un plateau plus haut que son voisin reçoit un garde-corps sur ce bord. Les lignes « à compléter » attendent tes références.</p>
+      <p class="note" style="margin-top:10px">Règles du prototype : 4 pieds par plateau rectangulaire, 3 par triangle ; 1 jonction par mètre de bord commun entre plateaux de même hauteur ; 2 SGC par garde-corps ; 1 FGARD entre deux garde-corps alignés. Un plateau plus haut que son voisin reçoit un garde-corps sur ce bord. Jupe : sur les bords libres choisis, hors escaliers ; 1 pince tous les 50 cm + 1 par extrémité. Les poids précédés de ≈ sont estimés : seuls PRA-R21, PRI-R21, PRA-C11, PRI-R15, PRA-T21D, PS100 et GARD1 viennent des fiches revendeur. Les lignes « à compléter » attendent tes références.</p>
     </section>
 
     <section>
-      <h2>Projet</h2>
+      <h2>Exemple et raccourcis</h2>
       <div class="row" id="resetRow"></div>
       <details style="margin-top:12px">
         <summary>Raccourcis clavier</summary>
@@ -343,6 +423,11 @@ label.ck.multi-sel{display:none}
     </section>
     </div>
   </aside>
+</div>
+
+<div class="planwrap" id="planModal" hidden>
+  <div class="planbar"><b>Plan de montage</b><span class="sp"></span><button class="btn" id="planPrint">Imprimer</button><button class="btn primary" id="planClose">Fermer</button></div>
+  <div class="sheet" id="planSheet"></div>
 </div>
 
 <div class="modal" id="npModal" hidden>
@@ -365,6 +450,7 @@ label.ck.multi-sel{display:none}
         </label>
       </div>
       <div class="presets" id="npPresets" style="margin-top:8px"></div>
+      <div class="presets" id="npSalle" style="margin-top:6px"></div>
     </div>
     <div class="grid3">
       <label class="f">Hauteur plancher <select id="npH"></select></label>
@@ -405,48 +491,56 @@ label.ck.multi-sel{display:none}
 <script>
 /* ================= Catalogue (modifiable) ================= */
 const C = 0.5; // pas de la grille en mètres
-const HEIGHTS = [0.4, 0.6, 0.8, 0.9, 1.0, 1.2];
+const HEIGHTS = [0.2, 0.4, 0.6, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4, 1.6, 1.8, 2.0];
+/* kg : poids unitaire ; est : poids estimé (pas trouvé sur la fiche revendeur) ; chg : charge admissible kg/m² */
 const BRANDS = {
   ASD: { nom:"ASD",
-    pieds:{0.6:["PS060","Pied fixe alu 50×3×575"],0.8:["PS080","Pied fixe alu 50×3×775"],0.9:["PS090","Pied fixe alu 50×3×875"],1.0:["PS100","Pied fixe alu 50×3×975"]},
-    jonction:["C0011","Jonction bridage 2 praticables"] },
-  SDX: { nom:"Prolyte StageDex", pieds:{}, jonction:[null,"Bride de liaison StageDex"] }
+    pieds:{0.6:["PS060","Pied fixe alu 50×3×575",0.7,true],0.8:["PS080","Pied fixe alu 50×3×775",0.95,true],0.9:["PS090","Pied fixe alu 50×3×875",1.07,true],1.0:["PS100","Pied fixe alu 50×3×975",1.2,false]},
+    jonction:["C0011","Jonction bridage 2 praticables",0.3,true] },
+  SDX: { nom:"Prolyte StageDex", pieds:{}, jonction:[null,"Bride de liaison StageDex",0.3,true] }
 };
 const PLATEAUX = [
-  {ref:"PRA-R21", brand:"ASD", nom:"Rectangulaire 2 × 1 m", W:2, D:1, shape:"rect", charge:"750 kg/m²"},
-  {ref:"PRI-R21", brand:"ASD", nom:"Rectangulaire 2 × 1 m", W:2, D:1, shape:"rect", charge:"série PRI"},
-  {ref:"PRA-C11", brand:"ASD", nom:"Carré 1 × 1 m", W:1, D:1, shape:"rect", charge:"750 kg/m²"},
-  {ref:"PRI-C11", brand:"ASD", nom:"Carré 1 × 1 m", W:1, D:1, shape:"rect", charge:"série PRI"},
-  {ref:"PRA-R15", brand:"ASD", nom:"Rectangulaire 1 × 0,5 m", W:1, D:0.5, shape:"rect", charge:"750 kg/m²"},
-  {ref:"PRI-R15", brand:"ASD", nom:"Rectangulaire 1 × 0,5 m", W:1, D:0.5, shape:"rect", charge:"500 kg/m²"},
-  {ref:"PRA-T21D", brand:"ASD", nom:"Triangulaire 2 × 1 m droit", W:2, D:1, shape:"triD", charge:"750 kg/m²"},
-  {ref:"PRA-T21G", brand:"ASD", nom:"Triangulaire 2 × 1 m gauche", W:2, D:1, shape:"triG", charge:"série PRA"},
-  {ref:"SM-D-T-200100", brand:"SDX", nom:"Topline 2 × 1 m", W:2, D:1, shape:"rect", charge:""},
-  {ref:"SM-D-T-200050", brand:"SDX", nom:"Topline 2 × 0,5 m", W:2, D:0.5, shape:"rect", charge:""},
-  {ref:"SM-D-T-5R", brand:"SDX", nom:"Topline triangle 2 × 1 m droit", W:2, D:1, shape:"triD", charge:""},
-  {ref:"SM-D-T-5L", brand:"SDX", nom:"Topline triangle 2 × 1 m gauche", W:2, D:1, shape:"triG", charge:""},
-  {ref:"SM-DL-B-200100", brand:"SDX", nom:"Basicline noir 2 × 1 m", W:2, D:1, shape:"rect", charge:""}
+  {ref:"PRA-R21", brand:"ASD", nom:"Rectangulaire 2 × 1 m", W:2, D:1, shape:"rect", kg:42, chg:750},
+  {ref:"PRI-R21", brand:"ASD", nom:"Rectangulaire 2 × 1 m", W:2, D:1, shape:"rect", kg:37, chg:500},
+  {ref:"PRA-C11", brand:"ASD", nom:"Carré 1 × 1 m", W:1, D:1, shape:"rect", kg:24, chg:750},
+  {ref:"PRI-C11", brand:"ASD", nom:"Carré 1 × 1 m", W:1, D:1, shape:"rect", kg:21, est:true, chg:500, estC:true},
+  {ref:"PRA-R15", brand:"ASD", nom:"Rectangulaire 1 × 0,5 m", W:1, D:0.5, shape:"rect", kg:14, est:true, chg:750},
+  {ref:"PRI-R15", brand:"ASD", nom:"Rectangulaire 1 × 0,5 m", W:1, D:0.5, shape:"rect", kg:12.8, chg:500},
+  {ref:"PRA-T21D", brand:"ASD", nom:"Triangulaire 2 × 1 m droit", W:2, D:1, shape:"triD", kg:20, chg:750},
+  {ref:"PRA-T21G", brand:"ASD", nom:"Triangulaire 2 × 1 m gauche", W:2, D:1, shape:"triG", kg:20, est:true, chg:750},
+  {ref:"SM-D-T-200100", brand:"SDX", nom:"Topline 2 × 1 m", W:2, D:1, shape:"rect", kg:40, est:true, chg:750, estC:true},
+  {ref:"SM-D-T-200050", brand:"SDX", nom:"Topline 2 × 0,5 m", W:2, D:0.5, shape:"rect", kg:22, est:true, chg:750, estC:true},
+  {ref:"SM-D-T-5R", brand:"SDX", nom:"Topline triangle 2 × 1 m droit", W:2, D:1, shape:"triD", kg:22, est:true, chg:750, estC:true},
+  {ref:"SM-D-T-5L", brand:"SDX", nom:"Topline triangle 2 × 1 m gauche", W:2, D:1, shape:"triG", kg:22, est:true, chg:750, estC:true},
+  {ref:"SM-DL-B-200100", brand:"SDX", nom:"Basicline noir 2 × 1 m", W:2, D:1, shape:"rect", kg:32, est:true, chg:500, estC:true}
 ];
+PLATEAUX.forEach(r=>r.charge=r.chg?`${r.chg} kg/m²${r.estC?" (estimé)":""}`:"");
 const REF = Object.fromEntries(PLATEAUX.map(p=>[p.ref,p]));
-const GC = {4:{sep:"GARD2",kit:"GARD2 100",nom:"Garde-corps 2 × 1 m"},2:{sep:"GARD1",kit:"GARD1 100",nom:"Garde-corps 1 × 1 m"},1:{sep:"GARD05",kit:"GARD05",nom:"Garde-corps 0,5 × 1 m"}};
+const GC = {4:{sep:"GARD2",kit:"GARD2 100",nom:"Garde-corps 2 × 1 m",kg:10.5,est:true},2:{sep:"GARD1",kit:"GARD1 100",nom:"Garde-corps 1 × 1 m",kg:5.48},1:{sep:"GARD05",kit:"GARD05",nom:"Garde-corps 0,5 × 1 m",kg:3,est:true}};
+const ACC = {"SGC":1.2,"SGC 100":1.3,"C0014":0.05,"FGARD":0.4}; // kg estimés
 const ESCALIERS = [
-  {ref:"ESC60",nom:"Escalier réglable 0,6–0,8 m + GC",min:0.6,max:0.8},
-  {ref:"ESC100",nom:"Escalier réglable 0,8–1 m + GC",min:0.8,max:1.0},
-  {ref:"ESC150",nom:"Escalier réglable 1–1,4 m + GC",min:1.0,max:1.4},
-  {ref:"ESC260",nom:"Escalier réglable 2–2,6 m + GC",min:2.0,max:2.6}
+  {ref:"ESC60",nom:"Escalier réglable 0,6–0,8 m + GC",min:0.6,max:0.8,kg:25},
+  {ref:"ESC100",nom:"Escalier réglable 0,8–1 m + GC",min:0.8,max:1.0,kg:35},
+  {ref:"ESC150",nom:"Escalier réglable 1–1,4 m + GC",min:1.0,max:1.4,kg:50},
+  {ref:"ESC260",nom:"Escalier réglable 2–2,6 m + GC",min:2.0,max:2.6,kg:90}
 ];
+const JUPE_KGM=h=>0.35*h+0.15; // jupe velours + bande : kg par mètre, estimé
+const SITE="https://configurateur-praticables.vercel.app/", SALLE="https://salle-3d-tools.vercel.app/";
 const fmt=(n,d=2)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:2});
 
 /* ================= État & historique ================= */
-let S={H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1};
+const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null});
+let S=defaultS(), curPid=null, pendingLink=null;
 let firstRun=false, selStair=null;
 let tool="sel", curRef="PRA-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, multi=false;
 let sel=new Set(), hist=[], fut=[];
-const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name});
+const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name,skirt:S.skirt,cart:S.cart});
 function restore(js){ Object.assign(S,JSON.parse(js)); sel=new Set([...sel].filter(id=>S.plats.some(p=>p.id===id))); syncInputs(); }
 function syncInputs(){
   const hs=document.getElementById("height"), gm=document.getElementById("gcMode");
   if(hs) hs.value=String(S.H); if(gm) gm.value=S.gc;
+  const sk=document.getElementById("skirtMode"), ct=document.getElementById("cartCap"), pn2=document.getElementById("pName");
+  if(sk) sk.value=S.skirt; if(ct) ct.value=S.cart; if(pn2&&document.activeElement!==pn2) pn2.value=S.name||"";
   const pn=document.getElementById("projName"); if(pn) pn.textContent=S.name||"Préparation de montage";
 }
 function pushHist(pre){ hist.push(pre??snap()); if(hist.length>150) hist.shift(); fut=[]; }
@@ -463,10 +557,36 @@ function sample(){
   for(let x=-4;x<16;x++) S.open.push(`h:${x}:6`);
   S.stairs.push({o:"v",line:0,a:0,n:-1});
 }
-function save(){ try{localStorage.setItem("praticables-asd-v2",JSON.stringify(S))}catch(e){} }
+const PKEY="praticables-projets", CKEY="praticables-courant";
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function readProjects(){ try{ const o=JSON.parse(localStorage.getItem(PKEY)); return o&&typeof o==="object"?o:{}; }catch(e){ return {}; } }
+function writeProjects(P){ try{ localStorage.setItem(PKEY,JSON.stringify(P)); }catch(e){} }
+function save(){
+  if(!curPid) curPid=newId();
+  const P=readProjects(); P[curPid]={name:S.name||"Sans nom",t:Date.now(),n:S.plats.length,data:S}; writeProjects(P);
+  try{ localStorage.setItem(CKEY,curPid); }catch(e){}
+  if(typeof renderProjects==="function") renderProjects();
+}
+/* nettoie des données venues d'un fichier ou d'un lien */
+function sanitize(d){
+  const o=Object.assign(defaultS(),d&&typeof d==="object"?d:{}), num=v=>Number.isFinite(+v)?+v:0;
+  o.plats=(Array.isArray(o.plats)?o.plats:[]).filter(p=>p&&REF[p.ref]).map((p,i)=>({id:Number.isFinite(+p.id)?+p.id:i+1,ref:p.ref,x:Math.round(num(p.x)),z:Math.round(num(p.z)),rot:((Math.round(num(p.rot))%4)+4)%4,h:HEIGHTS.includes(+p.h)?+p.h:1.0}));
+  o.nid=Math.max(o.plats.reduce((m,p)=>Math.max(m,p.id),0)+1,num(o.nid));
+  o.open=(Array.isArray(o.open)?o.open:[]).filter(k=>typeof k==="string"&&/^[hvd]:[-\d]+:[-\d]+$/.test(k));
+  o.stairs=(Array.isArray(o.stairs)?o.stairs:[]).filter(t=>t&&(t.o==="h"||t.o==="v")&&[t.line,t.a,t.n].every(v=>Number.isFinite(+v))).map(t=>({o:t.o,line:+t.line,a:+t.a,n:+t.n>0?1:-1}));
+  o.H=HEIGHTS.includes(+o.H)?+o.H:1.0; o.gc=["kit","sep","none"].includes(o.gc)?o.gc:"kit";
+  o.skirt=["none","front","visible","all"].includes(o.skirt)?o.skirt:"front"; o.cart=Math.min(40,Math.max(1,Math.round(num(o.cart))||8));
+  o.name=String(o.name||"").slice(0,80);
+  o.link=o.link&&typeof o.link==="object"?{id:String(o.link.id||"").slice(0,40),kind:String(o.link.kind||"").slice(0,20),name:String(o.link.name||"").slice(0,80)}:null;
+  return o;
+}
 function load(){
-  try{ const s=JSON.parse(localStorage.getItem("praticables-asd-v2")); if(s&&s.plats){ S=Object.assign(S,s); return; } }catch(e){}
-  sample(); S.name="Exemple"; firstRun=true;
+  const P=readProjects(); let pid=null; try{ pid=localStorage.getItem(CKEY); }catch(e){}
+  if(!Object.keys(P).length){ try{ const s=JSON.parse(localStorage.getItem("praticables-asd-v2")); if(s&&s.plats){ curPid=newId(); S=sanitize(s); S.name=S.name||"Mon premier projet"; return; } }catch(e){} }
+  if(pid&&P[pid]){ curPid=pid; S=sanitize(P[pid].data); return; }
+  const last=Object.entries(P).sort((a,b)=>b[1].t-a[1].t)[0];
+  if(last){ curPid=last[0]; S=sanitize(last[1].data); return; }
+  curPid=newId(); sample(); S.name="Exemple"; firstRun=true;
 }
 
 /* ================= Géométrie ================= */
@@ -546,51 +666,91 @@ function compute(){
   return {L,out,diags,ex,stairs,open,pieces,fgard,shared};
 }
 
+/* ================= Jupes ================= */
+function skirtEdges(R){
+  if(!R||S.skirt==="none") return [];
+  const st=new Set(R.stairs.flatMap(stairKeys));
+  const ok=e=>{ if(!e.empty||st.has(e.k)) return false;
+    if(e.o==="d") return S.skirt==="all"||S.skirt==="visible"||e.nz>0.5;
+    if(S.skirt==="front") return e.o==="h"&&e.n>0;
+    if(S.skirt==="visible") return !(e.o==="h"&&e.n<0);
+    return true; };
+  return [...R.out,...R.diags].filter(ok);
+}
+function skirtInfo(R){
+  const E=skirtEdges(R), byH=new Map(), g=new Map(); let runs=0, len=0;
+  const add=(h,l)=>{ byH.set(h,(byH.get(h)||0)+l); len+=l; };
+  for(const e of E){ if(e.o==="d"){ runs++; add(e.h,e.len); continue; }
+    const k=`${e.o}|${e.line}|${e.n}|${e.h}`; if(!g.has(k)) g.set(k,[]); g.get(k).push(e.a); add(e.h,C); }
+  for(const arr of g.values()){ arr.sort((a,b)=>a-b); runs++; for(let i=1;i<arr.length;i++) if(arr[i]!==arr[i-1]+1) runs++; }
+  return {E,byH,len,runs,pinces:len?Math.ceil(len/0.5-1e-9)+runs:0};
+}
 /* ================= Nomenclature ================= */
-let lastBom=[];
+let lastBom=[], lastTot=null;
+/* lignes : [réf, désignation, quantité, kg unitaire, poids estimé ?, unité] ; une ligne à 1 case = titre de rubrique */
 function bom(R){
-  const rows=[], inc=(m,k,v=1)=>m.set(k,(m.get(k)||0)+v);
+  const rows=[], inc=(m,k,v=1)=>m.set(k,(m.get(k)||0)+v), row=(ref,nom,n,kg,est,unit)=>rows.push([ref,nom,n,kg==null?null:kg,!!est,unit||""]);
   for(const b of Object.keys(BRANDS)){
     const m=new Map(); for(const p of S.plats) if(REF[p.ref].brand===b) inc(m,p.ref);
-    if(m.size){ rows.push([`Plateaux ${BRANDS[b].nom}`]); for(const r of PLATEAUX) if(m.get(r.ref)) rows.push([r.ref,r.nom,m.get(r.ref)]); }
+    if(m.size){ rows.push([`Plateaux ${BRANDS[b].nom}`]); for(const r of PLATEAUX) if(m.get(r.ref)) row(r.ref,r.nom,m.get(r.ref),r.kg,r.est); }
   }
   const pm=new Map(); for(const p of S.plats) inc(pm,`${REF[p.ref].brand}|${p.h}`,REF[p.ref].shape==="rect"?4:3);
   if(pm.size){ rows.push(["Pieds"]);
     for(const [k,n] of [...pm].sort()){ const [b,h]=k.split("|"), pr=BRANDS[b].pieds[+h];
-      rows.push(pr?[pr[0],pr[1],n]:[null,`Pied ${BRANDS[b].nom} pour plancher à ${fmt(+h)} m`,n]); } }
+      pr?row(pr[0],pr[1],n,pr[2],pr[3]):row(null,`Pied ${BRANDS[b].nom} pour plancher à ${fmt(+h)} m`,n,null); } }
   if(R.pieces.length){
     rows.push(["Garde-corps"]);
     const gm=new Map(), dm=new Map();
     for(const p of R.pieces) p.diag?inc(dm,fmt(p.len)):inc(gm,p.L);
     let nC14=0, nSGC=0, nSGC100=0;
     for(const L of [4,2,1]) if(gm.get(L)){ const g=GC[L], n=gm.get(L);
-      if(S.gc==="kit"){ rows.push([g.kit,g.nom+(L>1?" + 2 SGC 100 + 4 C0014":""),n]); if(L===1){nSGC100+=2*n;nC14+=4*n;} }
-      else { rows.push([g.sep,g.nom,n]); nSGC+=2*n; nC14+=4*n; } }
-    for(const [len,n] of dm){ rows.push([null,`Garde-corps sur mesure ${len} m (bord biais)`,n]); S.gc==="kit"?(nSGC100+=2*n):(nSGC+=2*n); nC14+=4*n; }
-    if(nSGC) rows.push(["SGC","Support garde-corps",nSGC]);
-    if(nSGC100) rows.push(["SGC 100","Support garde-corps 100 kg",nSGC100]);
-    if(nC14) rows.push(["C0014","Insert M10 périphérie",nC14]);
+      if(S.gc==="kit"){ row(g.kit,g.nom+(L>1?" + 2 SGC 100 + 4 C0014":""),n,+(g.kg+(L>1?2*ACC["SGC 100"]+4*ACC.C0014:0)).toFixed(2),g.est||L>1); if(L===1){nSGC100+=2*n;nC14+=4*n;} }
+      else { row(g.sep,g.nom,n,g.kg,g.est); nSGC+=2*n; nC14+=4*n; } }
+    for(const [len,n] of dm){ row(null,`Garde-corps sur mesure ${len} m (bord biais)`,n,null); S.gc==="kit"?(nSGC100+=2*n):(nSGC+=2*n); nC14+=4*n; }
+    if(nSGC) row("SGC","Support garde-corps",nSGC,ACC.SGC,true);
+    if(nSGC100) row("SGC 100","Support garde-corps 100 kg",nSGC100,ACC["SGC 100"],true);
+    if(nC14) row("C0014","Insert M10 périphérie",nC14,ACC.C0014,true);
   }
   const jm=new Map(); for(const v of R.shared.values()) inc(jm,v.brand,Math.max(1,Math.ceil(v.len-1e-9)));
   if(jm.size||R.fgard){ rows.push(["Fixations"]);
-    for(const [b,n] of jm){ const j=BRANDS[b].jonction; rows.push([j[0],j[1],n]); }
-    if(R.fgard) rows.push(["FGARD","Raccord 2 tubes garde-corps",R.fgard]); }
+    for(const [b,n] of jm){ const j=BRANDS[b].jonction; row(j[0],j[1],n,j[2],j[3]); }
+    if(R.fgard) row("FGARD","Raccord 2 tubes garde-corps",R.fgard,ACC.FGARD,true); }
   if(R.stairs.length){ rows.push(["Escaliers"]); const em=new Map();
     for(const s of R.stairs){ const e=ESCALIERS.find(e=>s.h>=e.min&&s.h<=e.max); inc(em,e?e.ref:`?${s.h}`); }
-    for(const [k,n] of em){ const e=ESCALIERS.find(e=>e.ref===k); rows.push(e?[e.ref,e.nom,n]:[null,`Escalier pour ${fmt(+k.slice(1))} m`,n]); } }
+    for(const [k,n] of em){ const e=ESCALIERS.find(e=>e.ref===k); e?row(e.ref,e.nom,n,e.kg,true):row(null,`Escalier pour ${fmt(+k.slice(1))} m`,n,null); } }
+  const sk=skirtInfo(R);
+  if(sk.len){ rows.push(["Habillage"]);
+    for(const [h,len] of [...sk.byH].sort((a,b)=>a[0]-b[0])){ const m=Math.ceil(len*2-1e-9)/2; row(null,`Jupe de scène, hauteur ${fmt(h)} m`,m,+JUPE_KGM(h).toFixed(2),true,"m"); }
+    row(null,"Pince de jupe (1 tous les 50 cm + 1 par extrémité)",sk.pinces,0.05,true); }
   return rows;
+}
+const kgTxt=v=>Math.round(v).toLocaleString("fr-FR");
+function totals(){
+  const rows=lastBom.filter(r=>r.length>1);
+  const kg=rows.reduce((t,r)=>t+(r[3]||0)*r[2],0), est=rows.some(r=>r[4]&&r[3]), miss=rows.some(r=>r[3]==null);
+  const plat=S.plats.reduce((t,p)=>t+REF[p.ref].kg,0);
+  const surf=S.plats.reduce((t,p)=>t+REF[p.ref].W*REF[p.ref].D*(REF[p.ref].shape==="rect"?1:0.5),0);
+  const weakest=S.plats.length?S.plats.map(p=>REF[p.ref]).sort((a,b)=>a.chg-b.chg)[0]:null;
+  const eq2=surf/2, carts=Math.ceil(eq2/S.cart-1e-9);
+  return {kg,est,miss,plat,surf,weakest,carts,eq2};
 }
 function renderBom(R){
   lastBom=bom(R);
-  document.getElementById("bom").innerHTML=lastBom.map(r=>r.length===1
-    ?`<tr class="cat"><td colspan="3">${r[0]}</td></tr>`
-    :`<tr><td class="c">${r[0]??'<span class="todo">à compléter</span>'}</td><td>${r[1]}</td><td class="q">${r[2]}</td></tr>`).join("")
+  document.getElementById("bom").innerHTML=(lastBom.length?`<tr class="hd"><td>Réf.</td><td>Désignation</td><td class="q">Qté</td><td class="q">kg</td></tr>`:"")+lastBom.map(r=>r.length===1
+    ?`<tr class="cat"><td colspan="4">${r[0]}</td></tr>`
+    :`<tr><td class="c">${r[0]??'<span class="todo">à compléter</span>'}</td><td>${r[1]}</td><td class="q">${r[5]?fmt(r[2],r[2]%1?1:0)+" "+r[5]:r[2]}</td><td class="q kg">${r[3]==null?"—":(r[4]?"≈ ":"")+kgTxt(r[3]*r[2])}</td></tr>`).join("")
     || `<tr><td class="note">Pose un premier plateau pour voir la liste.</td></tr>`;
-  const surf=S.plats.reduce((s,p)=>s+REF[p.ref].W*REF[p.ref].D*(REF[p.ref].shape==="rect"?1:0.5),0);
-  document.getElementById("hS").textContent=fmt(surf,0)+" m²";
+  const T=lastTot=totals();
+  document.getElementById("hS").textContent=fmt(T.surf,0)+" m²";
   document.getElementById("tP").textContent=S.plats.length;
   document.getElementById("tG").textContent=R.pieces.length;
   document.getElementById("tE").textContent=R.stairs.length;
+  document.getElementById("tK").textContent=(T.est?"≈ ":"")+kgTxt(T.kg);
+  const w=T.weakest;
+  document.getElementById("wtBox").innerHTML=S.plats.length?`
+    <dt>Poids total</dt><dd>${T.est?"≈ ":""}${kgTxt(T.kg)} kg${T.miss?" (hors lignes à compléter)":""}, dont plateaux ${kgTxt(T.plat)} kg</dd>
+    <dt>Charge admissible</dt><dd>${w.chg} kg/m²${w.estC?" (estimé)":""}, limitée par ${w.ref} · ${fmt(T.surf,0)} m² soit ${fmt(w.chg*T.surf/1000,1)} t réparties</dd>
+    <dt>Transport</dt><dd>${T.carts} chariot${T.carts>1?"s":""} de ${S.cart} plateaux 2 × 1 (${fmt(T.eq2,1)} équivalents 2 × 1)</dd>`:"";
 }
 
 /* ================= Scène 3D ================= */
@@ -617,7 +777,8 @@ const M={
   gc:new THREE.MeshStandardMaterial({color:0x202326,metalness:0.3,roughness:0.5}),
   step:new THREE.MeshStandardMaterial({color:0x4a5057,roughness:0.8}),
   stepSel:new THREE.MeshStandardMaterial({color:0xd9a710,roughness:0.6,emissive:0x3a2a00}),
-  open:new THREE.MeshBasicMaterial({color:0xe0a800})
+  open:new THREE.MeshBasicMaterial({color:0xe0a800}),
+  skirt:new THREE.MeshStandardMaterial({color:0x17181c,roughness:1,side:DS})
 };
 const ghost=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshBasicMaterial({color:0xe0a800,transparent:true,opacity:0.45,side:DS}));
 ghost.rotation.x=-Math.PI/2; ghost.visible=false; scene.add(ghost);
@@ -680,6 +841,10 @@ function rebuild(commit){
       bar(V(bx+sx,H+0.95,bz+sz),V(ex,0.95,ez),0.015,M.gc); cyl(0.015,0.95,M.gc,ex,0.475,ez);
     }
   }
+  for(const e of skirtEdges(R)){
+    const [x1,z1,x2,z2]=e.o==="d"?[e.x1,e.z1,e.x2,e.z2]:segCells(e);
+    const nx=e.o==="d"?e.nx:(e.o==="v"?e.n:0), nz=e.o==="d"?e.nz:(e.o==="h"?e.n:0), len=Math.hypot(x2-x1,z2-z1)*C, hh=Math.max(0.05,e.h-0.1);
+    const m=box(len,hh,0.008,M.skirt,(x1+x2)/2*C+nx*0.012,hh/2,(z1+z2)/2*C+nz*0.012); m.rotation.y=-Math.atan2(z2-z1,x2-x1); }
   renderBom(R); updateSelPanel(); updateHud();
   if(commit) save();
 }
@@ -961,7 +1126,8 @@ document.getElementById("vLbl").onclick=e=>{showLbl=!showLbl; e.target.textConte
 let toastT; function toast(msg){ const t=document.getElementById("toast"), h=document.getElementById("hint"); t.textContent=msg; t.hidden=false; h.style.visibility="hidden"; clearTimeout(toastT); toastT=setTimeout(()=>{t.hidden=true; h.style.visibility="";},2600); }
 document.getElementById("copy").onclick=()=>{
   const head=`${S.name||"Projet praticables"}\n`;
-  const txt=head+lastBom.map(r=>r.length===1?`\n${r[0].toUpperCase()}`:`${r[0]??"À compléter"}\t${r[1]}\t${r[2]}`).join("\n").trim();
+  const T=lastTot||totals();
+  const txt=head+"Réf.\tDésignation\tQté\tkg\n"+lastBom.map(r=>r.length===1?`\n${r[0].toUpperCase()}`:`${r[0]??"À compléter"}\t${r[1]}\t${r[2]}${r[5]?" "+r[5]:""}\t${r[3]==null?"":Math.round(r[3]*r[2]*10)/10}`).join("\n").trim()+`\n\nPoids total\t${T.est?"≈ ":""}${Math.round(T.kg)} kg`;
   navigator.clipboard.writeText(txt).then(()=>toast("Liste copiée, prête à coller dans Excel")).catch(()=>toast("Copie impossible ici, sélectionne le tableau à la main"));
 };
 const row=document.getElementById("resetRow");
@@ -1012,6 +1178,10 @@ mq.addEventListener("change",()=>{ setSheet(false); resize(); });
 /* ================= Assistant nouveau projet ================= */
 const npModal=document.getElementById("npModal"), $=id=>document.getElementById(id);
 const PRESETS=[[4,2],[6,4],[8,4],[8,6],[10,6],[12,8]];
+const SALLE_PRESETS=[
+  {lbl:"Grandes Serres · scène machiniste 8 × 8 · 1,20 m",w:8,d:8,h:1.2,name:"Scène machiniste Agora"},
+  {lbl:"FIP 360 · scène centrale 4 × 4 · 1 m",w:4,d:4,h:1.0,name:"Scène centrale FIP 360"},
+  {lbl:"Régie 4 × 3 · 1,10 m",w:4,d:3,h:1.1,name:"Régie"}];
 $("npPresets").innerHTML=PRESETS.map(([w,d])=>`<button type="button" data-w="${w}" data-d="${d}">${w} × ${d} m</button>`).join("");
 $("npPresets").querySelectorAll("button").forEach(b=>b.onclick=()=>{ $("npW").value=b.dataset.w; $("npD").value=b.dataset.d; npUpdate(); });
 $("npH").innerHTML=hOpts;
@@ -1120,33 +1290,222 @@ function npUpdate(){
   $("npWarn").textContent=skipped.length?`Pas la place pour : ${skipped.join(", ")} (bord trop court ou escalier voisin).`:"";
 }
 ["npW","npD","npH","npRef","npGc","npOpen","npFill"].forEach(id=>{ $(id).addEventListener("input",npUpdate); $(id).addEventListener("change",npUpdate); });
+$("npSalle").innerHTML=SALLE_PRESETS.map((o,i)=>`<button type="button" data-i="${i}">${o.lbl}</button>`).join("");
+$("npSalle").querySelectorAll("button").forEach(b=>b.onclick=()=>{ const o=SALLE_PRESETS[+b.dataset.i];
+  $("npW").value=o.w; $("npD").value=o.d; $("npH").value=String(o.h); if(!$("npName").value.trim()) $("npName").value=o.name; npUpdate(); });
+const nearestH=h=>HEIGHTS.reduce((b,x)=>Math.abs(x-h)<Math.abs(b-h)?x:b,HEIGHTS[0]);
 let npReturn=null;
-function openNP(){
+function openNP(pre){
   npReturn=document.activeElement;
-  $("npName").value=""; $("npH").value=String(S.H); $("npGc").value=S.gc;
+  $("npName").value=pre?.name||""; $("npH").value=String(pre?.h!=null?nearestH(+pre.h):S.H); $("npGc").value=S.gc;
+  if(pre?.w) $("npW").value=Math.max(0.5,Math.round(+pre.w*2)/2); if(pre?.d) $("npD").value=Math.max(0.5,Math.round(+pre.d*2)/2);
   if(REF[curRef].shape==="rect") $("npRef").value=curRef;
+  $("npTitle").textContent=pendingLink?"Scène depuis Salle 3D":"Nouvelle scène";
   npModal.hidden=false; npUpdate(); setTimeout(()=>$("npW").focus(),30);
 }
-function closeNP(){ npModal.hidden=true; if(npReturn&&npReturn.focus) npReturn.focus(); }
-$("newProj").onclick=openNP;
+function closeNP(){ npModal.hidden=true; pendingLink=null; if(npReturn&&npReturn.focus) npReturn.focus(); }
+$("newProj").onclick=()=>openNP();
 $("npCancel").onclick=closeNP;
 npModal.addEventListener("pointerdown",e=>{ if(e.target===npModal) closeNP(); });
+/* ouvre des données comme nouveau projet (l'ancien reste dans la liste) */
+function startProject(data){
+  save(); curPid=newId(); S=sanitize(data); sel.clear(); selStair=null; hist=[]; fut=[];
+  syncInputs(); rebuild(true); fit("3d");
+}
 $("npForm").addEventListener("submit",e=>{
   e.preventDefault(); npUpdate(); if(!npPlan) return;
-  const {Wc,Dc,plats}=npPlan, h=+$("npH").value, main=$("npRef").value;
-  act(()=>{
-    S.name=$("npName").value.trim()||`Scène ${fmt(Wc*C,0)} × ${fmt(Dc*C,0)} m`;
-    S.H=h; S.gc=$("npGc").value; sel.clear();
-    S.plats=plats.map(p=>({id:S.nid++,...p,h}));
-    S.stairs=stairsFromSlots(npSlots,Wc,Dc).stairs;
-    S.open=sideKeys($("npOpen").value,Wc,Dc);
-  });
-  syncInputs(); curRef=main; brand=REF[main].brand; drawRefs(); setTool("sel");
-  closeNP(); fit("3d"); toast(`${S.name} créée · Annuler pour revenir au plan précédent`);
+  const {Wc,Dc,plats}=npPlan, h=+$("npH").value, main=$("npRef").value, link=pendingLink;
+  const d=defaultS();
+  Object.assign(d,{name:$("npName").value.trim()||`Scène ${fmt(Wc*C,0)} × ${fmt(Dc*C,0)} m`,H:h,gc:$("npGc").value,skirt:S.skirt,cart:S.cart,link});
+  d.plats=plats.map(p=>({id:d.nid++,...p,h}));
+  d.stairs=stairsFromSlots(npSlots,Wc,Dc).stairs; d.open=sideKeys($("npOpen").value,Wc,Dc);
+  pendingLink=null; startProject(d);
+  curRef=main; brand=REF[main].brand; drawRefs(); setTool("sel");
+  npModal.hidden=true; toast(link?`${S.name} créée · « Envoyer vers Salle 3D » pour la renvoyer`:`${S.name} créée · l'ancien projet reste dans Projets`);
 });
 
-load(); syncInputs(); drawRefs(); setTool("sel"); readTheme(); resize(); rebuild(true); fit(); setSheet(false);
-if(firstRun) openNP();
+/* ================= Projets ================= */
+const dateTxt=t=>new Date(t).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})+" "+new Date(t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+const escH=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let delAsk=null;
+function renderProjects(){
+  const el=$("pList"); if(!el) return;
+  const P=readProjects(), list=Object.entries(P).sort((a,b)=>b[1].t-a[1].t);
+  el.innerHTML=list.map(([id,o])=>`<div class="pitem${id===curPid?" cur":""}"><div style="min-width:0"><b>${escH(o.name||"Sans nom")}</b><span>${o.n} plateau${o.n>1?"x":""} · ${dateTxt(o.t)}${id===curPid?" · ouvert":""}</span></div><div class="pa">${
+    delAsk===id?`<button data-a="del2" data-id="${id}" class="del">Supprimer ?</button><button data-a="cancel">Non</button>`
+    :`${id===curPid?"":`<button data-a="open" data-id="${id}">Ouvrir</button>`}<button data-a="dup" data-id="${id}" title="Dupliquer" aria-label="Dupliquer">⧉</button><button data-a="del" data-id="${id}" class="del" title="Supprimer" aria-label="Supprimer">✕</button>`}</div></div>`).join("");
+  const si=$("salleInfo"); if(si) si.textContent=S.link?`Scène liée : « ${S.link.name||"scène"} ». L'envoi remplace cette scène dans Salle 3D, à la même place.`:"L'envoi ajoute cette scène au centre de la vue dans Salle 3D. Pour remplacer une scène existante, ouvre-la depuis Salle 3D avec « Détailler en praticables ASD ».";
+}
+$("pList").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return; const id=b.dataset.id, P=readProjects();
+  if(b.dataset.a==="open"&&P[id]){ save(); curPid=id; S=sanitize(P[id].data); sel.clear(); selStair=null; hist=[]; fut=[]; syncInputs(); rebuild(true); fit("3d"); toast(`${S.name||"Projet"} ouvert`); }
+  if(b.dataset.a==="dup"&&P[id]){ const nid=newId(), d=sanitize(JSON.parse(JSON.stringify(P[id].data))); d.name=(d.name||"Projet")+" (copie)"; d.link=null; P[nid]={name:d.name,t:Date.now(),n:d.plats.length,data:d}; writeProjects(P); renderProjects(); toast("Projet dupliqué"); }
+  if(b.dataset.a==="del"){ delAsk=id; renderProjects(); }
+  if(b.dataset.a==="cancel"){ delAsk=null; renderProjects(); }
+  if(b.dataset.a==="del2"&&P[id]){ delete P[id]; writeProjects(P); delAsk=null;
+    if(id===curPid){ const next=Object.entries(P).sort((a,b)=>b[1].t-a[1].t)[0];
+      if(next){ curPid=next[0]; S=sanitize(next[1].data); } else { curPid=newId(); S=defaultS(); S.name="Nouveau projet"; }
+      sel.clear(); selStair=null; hist=[]; fut=[]; syncInputs(); rebuild(true); fit("3d"); }
+    renderProjects(); toast("Projet supprimé"); }
+});
+$("pName").addEventListener("input",e=>{ S.name=e.target.value.slice(0,80); const pn=$("projName"); if(pn) pn.textContent=S.name||"Préparation de montage"; });
+$("pName").addEventListener("change",()=>save());
+$("skirtMode").onchange=e=>act(()=>{ S.skirt=e.target.value; });
+$("cartCap").onchange=e=>act(()=>{ S.cart=Math.min(40,Math.max(1,Math.round(+e.target.value)||8)); });
+
+/* ---- fichier ---- */
+$("pExport").onclick=()=>{
+  const blob=new Blob([JSON.stringify({format:"configurateur-praticables",v:1,name:S.name,data:S},null,1)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=((S.name||"projet").replace(/[\\/:*?"<>|]+/g,"_").trim()||"projet")+".praticables.json";
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
+  toast("Fichier exporté dans tes téléchargements");
+};
+$("pImportBtn").onclick=()=>$("pImport").click();
+$("pImport").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  f.text().then(t=>{ const o=JSON.parse(t), d=o&&o.data?o.data:o; if(!d||!Array.isArray(d.plats)) throw new Error("format");
+    const P=readProjects(), clash=Object.values(P).some(x=>x.name===(o.name||d.name));
+    startProject({...d,name:(o.name||d.name||f.name.replace(/\.json$/i,""))+(clash?" (importé)":"")}); toast(`${S.name} importé`); })
+  .catch(()=>toast("Ce fichier n'est pas un projet du configurateur"));
+};
+
+/* ---- lien de partage (projet compressé dans l'adresse, sans serveur) ---- */
+const b64u={enc:u8=>{ let t=""; for(let i=0;i<u8.length;i+=0x8000) t+=String.fromCharCode(...u8.subarray(i,i+0x8000)); return btoa(t).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); },
+  dec:t=>Uint8Array.from(atob(t.replace(/-/g,"+").replace(/_/g,"/")),c=>c.charCodeAt(0))};
+const pipeS=async(data,stream)=>new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(stream)).arrayBuffer());
+const packJ=async o=>b64u.enc(await pipeS(JSON.stringify(o),new CompressionStream("deflate-raw")));
+const unpackJ=async t=>JSON.parse(new TextDecoder().decode(await pipeS(b64u.dec(t),new DecompressionStream("deflate-raw"))));
+function showLink(url,note){ $("pShareBox").hidden=false; $("pShareOut").value=url; $("pShareNote").textContent=note; $("pShareOut").focus(); $("pShareOut").select(); }
+$("pShare").onclick=async()=>{
+  try{ const url=SITE+"#p="+await packJ({name:S.name,data:S});
+    try{ await navigator.clipboard.writeText(url); showLink(url,"Lien copié. Il ouvre une copie de ce projet sur n'importe quel appareil : les modifications faites ailleurs ne reviennent pas ici."); toast("Lien de partage copié"); }
+    catch(e){ showLink(url,"Copie automatique impossible ici : copie le lien sélectionné ci-dessus."); } }
+  catch(e){ toast("Ce navigateur ne sait pas compresser le lien"); }
+};
+
+/* ================= Plan de montage 2D ================= */
+function planData(){
+  const L=R.L.slice().sort((a,b)=>{ const za=Math.min(...a.g.abs.map(v=>v[1])), zb=Math.min(...b.g.abs.map(v=>v[1]));
+    return za-zb||Math.min(...a.g.abs.map(v=>v[0]))-Math.min(...b.g.abs.map(v=>v[0])); });
+  const all=L.flatMap(o=>o.g.abs), x0=Math.min(...all.map(v=>v[0])), z0=Math.min(...all.map(v=>v[1])), x1=Math.max(...all.map(v=>v[0])), z1=Math.max(...all.map(v=>v[1]));
+  return {L,x0,z0,x1,z1};
+}
+function planSvgStr(){
+  const {L,x0,z0,x1,z1}=planData(), X=v=>(v-x0)*C, Z=v=>(v-z0)*C, W=(x1-x0)*C, D=(z1-z0)*C, f=v=>+v.toFixed(3);
+  const st=R.stairs.map(s=>{ const [a,b,c,d]=segCells(s,2), n=Math.max(2,Math.ceil(s.h/0.2)), run=0.26*n, nx=s.o==="v"?s.n:0, nz=s.o==="h"?s.n:0;
+    const e=ESCALIERS.find(e=>s.h>=e.min&&s.h<=e.max); return {a:X(a),b:Z(b),c:X(c),d:Z(d),nx,nz,run,n,ref:e?e.ref:"Escalier"}; });
+  let mnx=0,mnz=0,mxx=W,mxz=D; for(const t of st){ for(const [x,z] of [[t.a,t.b],[t.c,t.d],[t.a+t.nx*t.run,t.b+t.nz*t.run],[t.c+t.nx*t.run,t.d+t.nz*t.run]]){ mnx=Math.min(mnx,x); mxx=Math.max(mxx,x); mnz=Math.min(mnz,z); mxz=Math.max(mxz,z); } }
+  const padL=1.6, padT=1.5, padR=0.7, padB=1.4, vx=mnx-padL, vz=mnz-padT, vw=mxx-mnx+padL+padR, vh=mxz-mnz+padT+padB;
+  const o=[], hs=new Set(S.plats.map(p=>p.h)), multiH=hs.size>1, ink="#14181c", mute="#6a747e";
+  o.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${f(vx)} ${f(vz)} ${f(vw)} ${f(vh)}" font-family="IBM Plex Sans, Arial, sans-serif">`);
+  o.push(`<rect x="${f(vx)}" y="${f(vz)}" width="${f(vw)}" height="${f(vh)}" fill="#fff"/>`);
+  for(let x=Math.ceil(mnx);x<=Math.floor(mxx);x++) o.push(`<line x1="${x}" y1="${f(mnz)}" x2="${x}" y2="${f(mxz)}" stroke="#eef1f4" stroke-width="0.01"/>`);
+  for(let z=Math.ceil(mnz);z<=Math.floor(mxz);z++) o.push(`<line x1="${f(mnx)}" y1="${z}" x2="${f(mxx)}" y2="${z}" stroke="#eef1f4" stroke-width="0.01"/>`);
+  L.forEach(({p,g},i)=>{ const pts=g.abs.map(([x,z])=>`${f(X(x))},${f(Z(z))}`).join(" "), cx=X(g.cx), cz=Z(g.cz);
+    const ext=Math.min(g.w,g.d)*C, fs=Math.min(0.34,ext*0.42);
+    o.push(`<polygon points="${pts}" fill="${p.h===Math.max(...hs)?"#e6eaee":"#f3f5f7"}" stroke="${ink}" stroke-width="0.025"/>`);
+    o.push(`<text x="${f(cx)}" y="${f(cz+fs*0.18)}" text-anchor="middle" font-size="${f(fs)}" font-weight="700" fill="${ink}">${i+1}</text>`);
+    o.push(`<text x="${f(cx)}" y="${f(cz+fs*0.18+Math.min(0.16,fs*0.55))}" text-anchor="middle" font-size="${f(Math.min(0.13,fs*0.42))}" fill="${mute}">${p.ref}${multiH?" · "+fmt(p.h)+" m":""}</text>`); });
+  for(const e of skirtEdges(R)){ const [a,b,c,d]=e.o==="d"?[e.x1,e.z1,e.x2,e.z2]:segCells(e), nx=e.o==="d"?e.nx:(e.o==="v"?e.n:0), nz=e.o==="d"?e.nz:(e.o==="h"?e.n:0);
+    o.push(`<line x1="${f(X(a)+nx*0.07)}" y1="${f(Z(b)+nz*0.07)}" x2="${f(X(c)+nx*0.07)}" y2="${f(Z(d)+nz*0.07)}" stroke="#7a3d99" stroke-width="0.035" stroke-dasharray="0.06 0.05"/>`); }
+  for(const k of R.open){ const e=R.ex.get(k); if(!e) continue; const [a,b,c,d]=e.o==="d"?[e.x1,e.z1,e.x2,e.z2]:segCells(e);
+    o.push(`<line x1="${f(X(a))}" y1="${f(Z(b))}" x2="${f(X(c))}" y2="${f(Z(d))}" stroke="#d29a00" stroke-width="0.05" stroke-dasharray="0.14 0.08"/>`); }
+  for(const g of R.pieces){ const [a,b,c,d]=g.diag?[g.x1,g.z1,g.x2,g.z2]:segCells(g,g.L), nx=g.diag?g.nx:(g.o==="v"?g.n:0), nz=g.diag?g.nz:(g.o==="h"?g.n:0), i=0.05;
+    o.push(`<line x1="${f(X(a)-nx*i)}" y1="${f(Z(b)-nz*i)}" x2="${f(X(c)-nx*i)}" y2="${f(Z(d)-nz*i)}" stroke="${ink}" stroke-width="0.07" stroke-linecap="butt"/>`);
+    o.push(`<circle cx="${f(X(a)-nx*i)}" cy="${f(Z(b)-nz*i)}" r="0.05" fill="${ink}"/><circle cx="${f(X(c)-nx*i)}" cy="${f(Z(d)-nz*i)}" r="0.05" fill="${ink}"/>`); }
+  for(const t of st){ const q=[[t.a,t.b],[t.c,t.d],[t.c+t.nx*t.run,t.d+t.nz*t.run],[t.a+t.nx*t.run,t.b+t.nz*t.run]];
+    o.push(`<polygon points="${q.map(v=>v.map(f).join(",")).join(" ")}" fill="#fff" stroke="${ink}" stroke-width="0.03"/>`);
+    for(let i=1;i<t.n;i++){ const k=t.run*i/t.n; o.push(`<line x1="${f(t.a+t.nx*k)}" y1="${f(t.b+t.nz*k)}" x2="${f(t.c+t.nx*k)}" y2="${f(t.d+t.nz*k)}" stroke="${ink}" stroke-width="0.015"/>`); }
+    const mx=(t.a+t.c)/2+t.nx*t.run/2, mz=(t.b+t.d)/2+t.nz*t.run/2;
+    o.push(`<rect x="${f(mx-0.36)}" y="${f(mz-0.12)}" width="0.72" height="0.22" rx="0.04" fill="#fff" stroke="${ink}" stroke-width="0.015"/><text x="${f(mx)}" y="${f(mz+0.045)}" text-anchor="middle" font-size="0.14" font-weight="600" fill="${ink}">${t.ref}</text>`); }
+  // cotes
+  const dimH=(xa,xb,y,txt,sz)=>{ o.push(`<line x1="${f(xa)}" y1="${f(y)}" x2="${f(xb)}" y2="${f(y)}" stroke="${ink}" stroke-width="0.012"/>`);
+    for(const x of [xa,xb]) o.push(`<line x1="${f(x)}" y1="${f(y-0.09)}" x2="${f(x)}" y2="${f(y+0.09)}" stroke="${ink}" stroke-width="0.02"/><line x1="${f(x-0.06)}" y1="${f(y+0.06)}" x2="${f(x+0.06)}" y2="${f(y-0.06)}" stroke="${ink}" stroke-width="0.02"/>`);
+    o.push(`<text x="${f((xa+xb)/2)}" y="${f(y-0.07)}" text-anchor="middle" font-size="${sz}" fill="${ink}">${txt}</text>`); };
+  const dimV=(za,zb,x,txt,sz)=>{ o.push(`<line x1="${f(x)}" y1="${f(za)}" x2="${f(x)}" y2="${f(zb)}" stroke="${ink}" stroke-width="0.012"/>`);
+    for(const z of [za,zb]) o.push(`<line x1="${f(x-0.09)}" y1="${f(z)}" x2="${f(x+0.09)}" y2="${f(z)}" stroke="${ink}" stroke-width="0.02"/><line x1="${f(x-0.06)}" y1="${f(z+0.06)}" x2="${f(x+0.06)}" y2="${f(z-0.06)}" stroke="${ink}" stroke-width="0.02"/>`);
+    o.push(`<text x="${f(x-0.08)}" y="${f((za+zb)/2)}" text-anchor="middle" font-size="${sz}" fill="${ink}" transform="rotate(-90 ${f(x-0.08)} ${f((za+zb)/2)})">${txt}</text>`); };
+  const xs=[...new Set(L.flatMap(o=>o.g.abs.map(v=>v[0])))].sort((a,b)=>a-b).map(X), zs=[...new Set(L.flatMap(o=>o.g.abs.map(v=>v[1])))].sort((a,b)=>a-b).map(Z);
+  const top=mnz-0.45, left=mnx-0.45;
+  if(xs.length>2&&xs.length<=24) for(let i=1;i<xs.length;i++) dimH(xs[i-1],xs[i],top,fmt(xs[i]-xs[i-1],xs[i]-xs[i-1]<1?1:0),0.13);
+  dimH(0,W,top-0.5,fmt(W,W%1?1:0)+" m",0.2);
+  if(zs.length>2&&zs.length<=24) for(let i=1;i<zs.length;i++) dimV(zs[i-1],zs[i],left,fmt(zs[i]-zs[i-1],zs[i]-zs[i-1]<1?1:0),0.13);
+  dimV(0,D,left-0.5,fmt(D,D%1?1:0)+" m",0.2);
+  o.push(`<text x="${f(W/2)}" y="${f(mxz+0.75)}" text-anchor="middle" font-size="0.24" letter-spacing="0.08" font-weight="600" fill="${mute}">▼  PUBLIC  ▼</text>`);
+  // légende
+  const ly=mxz+1.15, lx=mnx-padL+0.2; let cx=lx; const leg=(sw,txt)=>{ o.push(sw(cx,ly)); o.push(`<text x="${f(cx+0.42)}" y="${f(ly+0.05)}" font-size="0.13" fill="${mute}">${txt}</text>`); cx+=0.5+txt.length*0.075; };
+  leg((x,y)=>`<line x1="${f(x)}" y1="${f(y)}" x2="${f(x+0.35)}" y2="${f(y)}" stroke="${ink}" stroke-width="0.07"/>`,"Garde-corps");
+  leg((x,y)=>`<line x1="${f(x)}" y1="${f(y)}" x2="${f(x+0.35)}" y2="${f(y)}" stroke="#d29a00" stroke-width="0.05" stroke-dasharray="0.14 0.08"/>`,"Bord ouvert");
+  if(S.skirt!=="none") leg((x,y)=>`<line x1="${f(x)}" y1="${f(y)}" x2="${f(x+0.35)}" y2="${f(y)}" stroke="#7a3d99" stroke-width="0.035" stroke-dasharray="0.06 0.05"/>`,"Jupe");
+  leg((x,y)=>`<rect x="${f(x)}" y="${f(y-0.1)}" width="0.35" height="0.2" fill="#e6eaee" stroke="${ink}" stroke-width="0.02"/>`,"Plateau n° · référence");
+  o.push(`</svg>`); return o.join("");
+}
+function openPlan(){
+  if(!S.plats.length){ toast("Pose au moins un plateau pour faire le plan"); return; }
+  const T=lastTot||totals(), {L,x0,z0,x1,z1}=planData(), hs=[...new Set(S.plats.map(p=>p.h))].sort((a,b)=>a-b);
+  const pos=L.map(({p,g},i)=>{ const mx=Math.min(...g.abs.map(v=>v[0])), mz=Math.min(...g.abs.map(v=>v[1]));
+    return `<tr><td class="c">${i+1}</td><td>${p.ref}</td><td class="q">${fmt(p.h)}</td><td class="q">${fmt((mx-x0)*C,1)} ; ${fmt((mz-z0)*C,1)}</td><td class="q">${(p.rot%4)*90}°</td></tr>`; }).join("");
+  const bomRows=lastBom.map(r=>r.length===1?`<tr class="cat"><td colspan="4">${r[0]}</td></tr>`:`<tr><td class="c">${r[0]??"à compléter"}</td><td>${r[1]}</td><td class="q">${r[5]?fmt(r[2],r[2]%1?1:0)+" "+r[5]:r[2]}</td><td class="q">${r[3]==null?"—":(r[4]?"≈ ":"")+kgTxt(r[3]*r[2])}</td></tr>`).join("");
+  $("planSheet").innerHTML=`<h1>${escH(S.name||"Projet praticables")}</h1>
+    <div class="meta"><span>Plan du <b>${new Date().toLocaleDateString("fr-FR")}</b></span><span>Emprise <b>${fmt((x1-x0)*C,1)} × ${fmt((z1-z0)*C,1)} m</b></span><span>Surface <b>${fmt(T.surf,1)} m²</b></span><span>Plancher <b>${hs.map(h=>fmt(h)).join(" / ")} m</b></span><span>Plateaux <b>${S.plats.length}</b></span><span>Poids <b>${T.est?"≈ ":""}${kgTxt(T.kg)} kg</b></span><span>Charge <b>${T.weakest.chg} kg/m²</b></span><span>Transport <b>${T.carts} chariot${T.carts>1?"s":""}</b></span></div>
+    ${planSvgStr()}
+    <div class="cols"><div><h2>Position des plateaux</h2><p class="note" style="margin:0 0 6px;color:#4b5560">X ; Y en mètres depuis le coin arrière gauche (vu du public), coin arrière gauche de chaque plateau.</p>
+      <div class="tw"><table><tr class="hd"><td>N°</td><td>Réf.</td><td class="q">Haut.</td><td class="q">X ; Y</td><td class="q">Rot.</td></tr>${pos}</table></div></div>
+      <div><h2>Matériel</h2><div class="tw"><table><tr class="hd"><td>Réf.</td><td>Désignation</td><td class="q">Qté</td><td class="q">kg</td></tr>${bomRows}</table></div>
+      <p class="note" style="color:#4b5560">Poids précédés de ≈ : estimés. Charge admissible limitée par ${T.weakest.ref}. ${S.cart} plateaux 2 × 1 par chariot.</p></div></div>`;
+  $("planModal").hidden=false; $("planClose").focus();
+}
+$("vPlan").onclick=openPlan; $("bPlan").onclick=openPlan;
+$("planClose").onclick=()=>{ $("planModal").hidden=true; };
+$("planPrint").onclick=()=>{ try{ window.print(); }catch(e){} };
+
+/* ================= Pont avec Salle 3D ================= */
+function stagePayload(){
+  const {x0,z0,x1,z1}=planData(), X=v=>+((v-x0)*C).toFixed(3), Z=v=>+((v-z0)*C).toFixed(3);
+  const T=lastTot||totals();
+  const nrm=g=>[g.diag?g.nx:(g.o==="v"?g.n:0), g.diag?g.nz:(g.o==="h"?g.n:0)];
+  return {v:1,type:"asd-stage",id:S.link?.id||null,name:S.name||"Scène ASD",W:+((x1-x0)*C).toFixed(3),D:+((z1-z0)*C).toFixed(3),H:Math.max(...S.plats.map(p=>p.h)),
+    plats:R.L.map(({p,g})=>({ref:p.ref,h:p.h,p:g.abs.map(([x,z])=>[X(x),Z(z)])})),
+    gc:R.pieces.map(g=>{ const [a,b,c,d]=g.diag?[g.x1,g.z1,g.x2,g.z2]:segCells(g,g.L); return [X(a),Z(b),X(c),Z(d),g.h,...nrm(g)]; }),
+    stairs:R.stairs.map(s=>{ const [a,b,c,d]=segCells(s,2), e=ESCALIERS.find(e=>s.h>=e.min&&s.h<=e.max); return [X(a),Z(b),X(c),Z(d),s.o==="v"?s.n:0,s.o==="h"?s.n:0,s.h,e?e.ref:""]; }),
+    skirts:skirtEdges(R).map(e=>{ const [a,b,c,d]=e.o==="d"?[e.x1,e.z1,e.x2,e.z2]:segCells(e); return [X(a),Z(b),X(c),Z(d),e.h]; }),
+    bom:lastBom.filter(r=>r.length>1).map(r=>[r[0]||"",r[1],r[2],r[3]==null?0:+r[3],r[5]||""]),
+    kg:Math.round(T.kg), surf:+T.surf.toFixed(2), charge:T.weakest.chg, chargeRef:T.weakest.ref, carts:T.carts,
+    project:{name:S.name,data:S}};
+}
+let ackT=null;
+addEventListener("message",e=>{ if(e.origin===SALLE.replace(/\/$/,"")&&e.data&&e.data.type==="asd-ack"){ clearTimeout(ackT); $("salleLink").hidden=true; toast("Scène reçue par Salle 3D : retourne sur son onglet"); } });
+$("toSalle").onclick=async()=>{
+  if(!S.plats.length){ toast("Pose au moins un plateau avant l'envoi"); return; }
+  let url; try{ url=SALLE+"#asd="+await packJ(stagePayload()); }catch(e){ toast("Ce navigateur ne sait pas préparer l'envoi"); return; }
+  const lk=$("salleLink"); lk.href=url;
+  const op=window.opener;
+  if(op&&!op.closed){
+    try{ op.postMessage({type:"asd-stage",payload:stagePayload()},SALLE.replace(/\/$/,"")); }catch(e){}
+    clearTimeout(ackT); ackT=setTimeout(()=>{ lk.hidden=false; toast("Salle 3D n'a pas répondu : utilise le bouton pour l'ouvrir avec la scène"); },1500);
+    return;
+  }
+  const w=window.open(url,"_blank"); if(!w){ lk.hidden=false; toast("Clique sur « Ouvrir Salle 3D avec la scène »"); } else toast("Salle 3D s'ouvre avec la scène, au centre de la vue");
+};
+
+/* ================= Adresse : #p= (lien partagé) et #from= (depuis Salle 3D) ================= */
+async function handleHash(){
+  const h=location.hash; let m;
+  const clear=()=>{ try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){} };
+  if((m=h.match(/^#p=([\w-]+)$/))){ clear();
+    try{ const o=await unpackJ(m[1]); startProject({...o.data,name:(o.name||o.data?.name||"Projet partagé")}); npModal.hidden=true; toast(`${S.name} ouvert depuis le lien (copie)`); }
+    catch(e){ toast("Ce lien de projet est illisible ou incomplet"); } return true; }
+  if((m=h.match(/^#from=([\w-]+)$/))){ clear();
+    try{ const o=await unpackJ(m[1]), link={id:String(o.id||""),kind:String(o.kind||""),name:String(o.name||"Scène")};
+      if(o.project&&o.project.data){ startProject({...o.project.data,name:o.project.name||o.name,link}); npModal.hidden=true; toast("Scène ASD rouverte depuis Salle 3D"); }
+      else { pendingLink=link; openNP({w:+o.P,d:+o.L,h:+o.H,name:link.name}); } }
+    catch(e){ toast("Le lien venu de Salle 3D est illisible"); } return true; }
+  return false;
+}
+addEventListener("hashchange",handleHash);
+
+load(); syncInputs(); drawRefs(); setTool("sel"); readTheme(); resize(); rebuild(true); fit(); setSheet(false); renderProjects();
+handleHash().then(done=>{ if(!done&&firstRun) openNP(); });
 </script>
 
 </body>

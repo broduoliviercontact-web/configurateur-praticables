@@ -15,6 +15,33 @@ Ouvrir `index.html` dans un navigateur. Aucun serveur n'est nécessaire. Three.j
 - R pour pivoter, flèches pour déplacer, Suppr pour supprimer, Ctrl+D pour dupliquer, Ctrl+Z / Ctrl+Maj+Z pour annuler / rétablir
 - Le plan est enregistré dans le navigateur (localStorage)
 
+## Projets et partage
+
+- **Projets** : chaque scène est un projet enregistré dans le navigateur ; la liste permet d'ouvrir, dupliquer ou supprimer. « Nouveau projet » garde l'ancien dans la liste.
+- **Exporter / importer un fichier** `.praticables.json` pour sauvegarder ou envoyer un projet.
+- **Lien de partage** : le projet est compressé dans l'adresse (`#p=…`), sans serveur. C'est une copie : les modifications faites ailleurs ne reviennent pas.
+
+## Plan de montage 2D
+
+Bouton « Plan de montage 2D » : plateaux numérotés avec leur référence, cotes générales et en chaîne, garde-corps, bords ouverts, jupes, escaliers (référence ESC), tableau des positions (X ; Y depuis le coin arrière gauche vu du public) et nomenclature avec les poids. « Imprimer » sort la feuille en A4 paysage (plan en page 1, tableaux en page 2).
+
+## Poids, charge et transport
+
+- Poids unitaire par référence ; poids total dans la nomenclature et sur le plan. Les poids marqués ≈ sont estimés : seuls PRA-R21 (42 kg), PRI-R21 (37 kg), PRA-C11 (24 kg), PRI-R15 (12,8 kg), PRA-T21D (20 kg), PS100 (1,2 kg) et GARD1 (5,48 kg) viennent des fiches revendeur.
+- Charge admissible : celle de la référence la plus faible posée (750 kg/m² en PRA, 500 kg/m² en PRI).
+- Transport : nombre de chariots selon le réglage « plateaux 2 × 1 par chariot » (8 par défaut, à ajuster à ton parc).
+
+## Jupes
+
+Réglage « Jupes » : aucune, face public, face et côtés, ou tout le tour. Longueur par hauteur de plancher, hors escaliers, et pinces (1 tous les 50 cm + 1 par extrémité, à valider). Les jupes sont dessinées en 3D et sur le plan.
+
+## Lien avec Salle 3D
+
+- Dans [Salle 3D](https://salle-3d-tools.vercel.app), une scène, une régie ou la scène FIP 360 sélectionnée affiche **« Détailler en praticables ASD ↗ »** : le configurateur s'ouvre avec ses dimensions (P = ouverture, L = profondeur, H = hauteur) et son nom.
+- **« Envoyer vers Salle 3D »** renvoie la scène détaillée : elle remplace la scène d'origine à la même place (plateaux, garde-corps, escaliers, jupes en 3D et sur le plan 2D), et la fiche setup de Salle 3D liste le matériel ASD avec les poids. Sans onglet Salle 3D ouvert, l'envoi ouvre Salle 3D avec la scène au centre de la vue (lien `#asd=…`).
+- « Modifier la scène ASD ↗ » dans Salle 3D rouvre le projet détaillé.
+- Modèles de la salle dans l'assistant : scène machiniste 8 × 8 m à 1,20 m, scène centrale FIP 360 4 × 4 m, régie 4 × 3 m à 1,10 m.
+
 ## Catalogue
 
 Les références sont en haut du script dans `index.html` : `BRANDS`, `PLATEAUX`, `GC`, `ESCALIERS` et `HEIGHTS`. Pour ajouter un plateau, on ajoute une ligne à `PLATEAUX`.

@@ -504,8 +504,8 @@ const BRANDS = {
   SDX: { nom:"Prolyte StageDex", pieds:{}, jonction:[null,"Bride de liaison StageDex",0.3,true] }
 };
 const PLATEAUX = [
-  {ref:"PRA-R21", brand:"ASD", nom:"Rectangulaire 2 × 1 m", W:2, D:1, shape:"rect", kg:42, chg:750},
-  {ref:"PRI-R21", brand:"ASD", nom:"Rectangulaire 2 × 1 m", W:2, D:1, shape:"rect", kg:37, chg:500},
+  {ref:"PRI-R21", brand:"ASD", nom:"Rectangulaire 2 × 1 m int/ext", W:2, D:1, shape:"rect", kg:37, chg:500},
+  {ref:"PRA-R21", brand:"ASD", nom:"Rectangulaire 2 × 1 m outdoor", W:2, D:1, shape:"rect", kg:42, chg:750},
   {ref:"PRA-C11", brand:"ASD", nom:"Carré 1 × 1 m", W:1, D:1, shape:"rect", kg:24, chg:750},
   {ref:"PRI-C11", brand:"ASD", nom:"Carré 1 × 1 m", W:1, D:1, shape:"rect", kg:21, est:true, chg:500, estC:true},
   {ref:"PRA-R15", brand:"ASD", nom:"Rectangulaire 1 × 0,5 m", W:1, D:0.5, shape:"rect", kg:14, est:true, chg:750},
@@ -536,7 +536,7 @@ const fmt=(n,d=2)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFrac
 const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null});
 let S=defaultS(), curPid=null, pendingLink=null;
 let firstRun=false, selStair=null;
-let tool="sel", curRef="PRA-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, multi=false;
+let tool="sel", curRef="PRI-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, multi=false;
 let sel=new Set(), hist=[], fut=[];
 const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name,skirt:S.skirt,cart:S.cart});
 function restore(js){ Object.assign(S,JSON.parse(js)); sel=new Set([...sel].filter(id=>S.plats.some(p=>p.id===id))); syncInputs(); }
@@ -552,14 +552,15 @@ function act(fn){ const pre=snap(); const r=fn(); pushHist(pre); rebuild(true); 
 function undo(){ if(!hist.length) return; fut.push(snap()); restore(hist.pop()); rebuild(true); toast("Annulé"); }
 function redo(){ if(!fut.length) return; hist.push(snap()); restore(fut.pop()); rebuild(true); toast("Rétabli"); }
 
-/* scène par défaut : 8 × 8 m en PRA-R21 à 1 m, face public ouverte, escalier à l'arrière côté droit (vu du public) */
+/* scène par défaut : 8 × 8 m en PRI-R21 (ASD 500 kg/m²) à 1 m, face public ouverte, escalier à l'arrière côté droit (vu du public) */
 function sample(){
-  const p=planScene(8,8,"PRA-R21",false);
+  const p=planScene(8,8,"PRI-R21",false);
   S.nid=1; S.H=1.0; S.plats=p.plats.map(q=>({id:S.nid++,...q,h:1.0}));
   S.open=sideKeys("front",p.Wc,p.Dc);
   S.stairs=stairsFromSlots(new Set(["back-end"]),p.Wc,p.Dc).stairs;
 }
 /* ancien exemple (12 plateaux avec triangles) : remplacé par la scène 8 × 8 */
+const isOld8=d=>d?.name==="Scène 8 × 8 m"&&Array.isArray(d.plats)&&d.plats.length===32&&d.plats.every(p=>p.ref==="PRA-R21"&&+p.h===1);
 const isOldSample=d=>Array.isArray(d?.plats)&&d.plats.length===12&&d.plats.some(p=>p.ref==="PRA-T21G"&&p.x===-4&&p.z===4)&&d.plats.some(p=>p.ref==="PRA-R21"&&p.x===12&&p.z===0&&+p.h===0.6);
 const PKEY="praticables-projets", CKEY="praticables-courant";
 const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -586,7 +587,7 @@ function sanitize(d){
 }
 function load(){
   const P=readProjects(); let pid=null; try{ pid=localStorage.getItem(CKEY); }catch(e){}
-  let fix=false; for(const o of Object.values(P)) if(isOldSample(o.data)){ const keep=S; S=sanitize(o.data); sample(); S.name="Scène 8 × 8 m"; o.data=S; o.name=S.name; o.n=S.plats.length; S=keep; fix=true; }
+  let fix=false; for(const o of Object.values(P)) if(isOld8(o.data)){ o.data.plats.forEach(p=>p.ref="PRI-R21"); fix=true; } else if(isOldSample(o.data)){ const keep=S; S=sanitize(o.data); sample(); S.name="Scène 8 × 8 m"; o.data=S; o.name=S.name; o.n=S.plats.length; S=keep; fix=true; }
   if(fix) writeProjects(P);
   if(!Object.keys(P).length){ try{ const s=JSON.parse(localStorage.getItem("praticables-asd-v2")); if(s&&s.plats&&!isOldSample(s)){ curPid=newId(); S=sanitize(s); S.name=S.name||"Mon premier projet"; return; } }catch(e){} }
   if(pid&&P[pid]){ curPid=pid; S=sanitize(P[pid].data); return; }

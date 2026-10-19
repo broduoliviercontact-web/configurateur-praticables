@@ -4,7 +4,7 @@ Outil interne de préparation de montage : on pose des praticables en 3D, le sit
 
 ## Utilisation
 
-À l'ouverture : une scène 8 × 8 m en PRA-R21 à 1 m, face public ouverte, escalier à l'arrière côté droit (vu du public). « Revenir à la scène 8 × 8 » la recharge.
+À l'ouverture : une scène 8 × 8 m en PRI-R21 (ASD 500 kg/m², plateau par défaut) à 1 m, face public ouverte, escalier à l'arrière côté droit (vu du public). « Revenir à la scène 8 × 8 » la recharge.
 
 En ligne : https://configurateur-praticables.vercel.app/
 

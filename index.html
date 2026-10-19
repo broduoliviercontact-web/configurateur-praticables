@@ -108,6 +108,17 @@ input.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .prev svg{width:100%;height:auto;max-height:220px;display:block}
 .prev .info{font-size:12px;color:var(--muted);line-height:1.5}
 .prev .info b{color:var(--ink);font-family:var(--f-mono);font-weight:500}
+fieldset.stairs{border:1px solid var(--line);border-radius:9px;margin:0;padding:10px 12px 12px;display:grid;gap:8px;min-width:0}
+fieldset.stairs legend{font-size:12px;color:var(--muted);padding:0 4px}
+#npStairCount{font-family:var(--f-mono);color:var(--ink)}
+.stairgrid{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:6px 6px;align-items:center}
+.stairgrid .side{font-size:12px;color:var(--muted);padding-right:4px;white-space:nowrap}
+.stairgrid button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:7px;padding:7px 4px;font:500 12px var(--f-body);cursor:pointer;min-width:0}
+.stairgrid button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.stairgrid button:disabled{opacity:.35;cursor:default}
+.stairgrid .tools{grid-column:1/-1;display:flex;gap:6px;justify-content:flex-end}
+.stairgrid .tools button{flex:0 0 auto;padding:5px 10px;font-size:11px}
+#npPrev [data-slot]{cursor:pointer}
 .dlg .actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 @media (max-width:820px){
   .app{display:block;position:relative}
@@ -300,17 +311,15 @@ input.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
         <option value="left">Côté gauche</option>
         <option value="right">Côté droit</option>
       </select></label>
-      <label class="f">Escalier d'accès <select id="npStair">
-        <option value="left">Côté gauche</option>
-        <option value="right">Côté droit</option>
-        <option value="back">Arrière</option>
-        <option value="both">Les deux côtés</option>
-        <option value="none">Aucun</option>
-      </select></label>
       <label class="ck" style="align-self:end;padding-bottom:8px"><input type="checkbox" id="npFill" checked> Compléter avec des petits formats</label>
     </div>
+    <fieldset class="stairs">
+      <legend>Escaliers d'accès <span id="npStairCount"></span></legend>
+      <p class="note">Gauche et droite vus du public. Touche les boutons ou les emplacements en pointillés sur le plan.</p>
+      <div class="stairgrid" id="npStairs"></div>
+    </fieldset>
     <div class="prev">
-      <svg id="npPrev" role="img" aria-label="Aperçu du plan"></svg>
+      <svg id="npPrev" role="img" aria-label="Aperçu du plan, emplacements d'escaliers cliquables"></svg>
       <div class="info" id="npInfo"></div>
     </div>
     <div class="actions">
@@ -619,8 +628,9 @@ function fit(view){
     mnz=Math.min(...all.map(v=>v[1]))*C; mxz=Math.max(...all.map(v=>v[1]))*C; mh=Math.max(...S.plats.map(p=>p.h)); }
   const cx=(mnx+mxx)/2, cz=(mnz+mxz)/2, span=Math.max(mxx-mnx,mxz-mnz,3);
   ctl.target.set(cx,mh/2,cz); grid.position.set(Math.round(cx),0.001,Math.round(cz));
-  if(view==="top") cam.position.set(cx,span*2.1+3,cz+0.01);
-  else cam.position.set(cx+span*0.8,span*0.8+2,cz+span*1.25);
+  const k=cam.aspect<1?Math.max(1,0.85/cam.aspect):1;
+  if(view==="top") cam.position.set(cx,(span*2.1+3)*k,cz+0.01);
+  else cam.position.set(cx+span*0.8*k,(span*0.8+2)*k,cz+span*1.25*k);
   ctl.update();
 }
 function resize(){ const r=cv.parentElement.getBoundingClientRect(); renderer.setSize(r.width,r.height,false); cam.aspect=r.width/Math.max(1,r.height); cam.updateProjectionMatrix(); }
@@ -832,7 +842,7 @@ document.getElementById("vTop").onclick=()=>fit("top");
 document.getElementById("vLegs").onclick=e=>{showLegs=!showLegs; e.target.textContent=showLegs?"Masquer pieds":"Afficher pieds"; rebuild(false);};
 document.getElementById("vLbl").onclick=e=>{showLbl=!showLbl; e.target.textContent=showLbl?"Masquer étiquettes":"Afficher étiquettes"; rebuild(false);};
 
-let toastT; function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2200); }
+let toastT; function toast(msg){ const t=document.getElementById("toast"), h=document.getElementById("hint"); t.textContent=msg; t.hidden=false; h.style.visibility="hidden"; clearTimeout(toastT); toastT=setTimeout(()=>{t.hidden=true; h.style.visibility="";},2600); }
 document.getElementById("copy").onclick=()=>{
   const head=`${S.name||"Projet praticables"}\n`;
   const txt=head+lastBom.map(r=>r.length===1?`\n${r[0].toUpperCase()}`:`${r[0]??"À compléter"}\t${r[1]}\t${r[2]}`).join("\n").trim();
@@ -918,10 +928,39 @@ function sideKeys(side,Wc,Dc){ const k=[];
   if(side==="left") for(let z=0;z<Dc;z++) k.push(`v:0:${z}`);
   if(side==="right") for(let z=0;z<Dc;z++) k.push(`v:${Wc}:${z}`);
   return k; }
-function stairsFor(opt,Wc,Dc){ const L={o:"v",line:0,a:0,n:-1}, Rr={o:"v",line:Wc,a:0,n:1}, B={o:"h",line:0,a:Math.max(0,Math.floor(Wc/2)-1),n:-1};
-  if(Dc<2&&(opt==="left"||opt==="right"||opt==="both")) return [];
-  if(Wc<2&&opt==="back") return [];
-  return {left:[L],right:[Rr],back:[B],both:[L,Rr],none:[]}[opt]; }
+/* 12 emplacements d'escalier, gauche/droite vus du public (public en bas du plan, z max) */
+const SIDES=[
+  {id:"front",lbl:"Avant",pos:[["a0","Gauche"],["mid","Centre"],["end","Droite"]]},
+  {id:"left",lbl:"Côté gauche",pos:[["end","Avant"],["mid","Milieu"],["a0","Arrière"]]},
+  {id:"right",lbl:"Côté droit",pos:[["end","Avant"],["mid","Milieu"],["a0","Arrière"]]},
+  {id:"back",lbl:"Arrière",pos:[["a0","Gauche"],["mid","Centre"],["end","Droite"]]}
+];
+const SLOTS=SIDES.flatMap(s=>s.pos.map(([p,l])=>({id:`${s.id}-${p}`,side:s.id,pos:p,lbl:`${s.lbl} · ${l}`,short:l})));
+function slotStair(slot,Wc,Dc){
+  const L=(slot.side==="front"||slot.side==="back")?Wc:Dc; if(L<2) return null;
+  const a=slot.pos==="a0"?0:slot.pos==="mid"?Math.max(0,Math.floor(L/2)-1):L-2;
+  const base={front:{o:"h",line:Dc,n:1},back:{o:"h",line:0,n:-1},left:{o:"v",line:0,n:-1},right:{o:"v",line:Wc,n:1}}[slot.side];
+  return {...base,a};
+}
+function stairsFromSlots(ids,Wc,Dc){
+  const out=[], skipped=[];
+  for(const sl of SLOTS){ if(!ids.has(sl.id)) continue; const s=slotStair(sl,Wc,Dc);
+    if(!s||out.some(o=>o.o===s.o&&o.line===s.line&&Math.abs(o.a-s.a)<2)){ skipped.push(sl.lbl); continue; }
+    out.push(s); }
+  return {stairs:out,skipped};
+}
+let npSlots=new Set(["left-a0"]);
+function drawSlotButtons(Wc,Dc){
+  const g=$("npStairs");
+  g.innerHTML=SIDES.map(s=>`<span class="side">${s.lbl}</span>`+s.pos.map(([p,l])=>{ const id=`${s.id}-${p}`, ok=!!slotStair(SLOTS.find(x=>x.id===id),Wc,Dc);
+    return `<button type="button" data-slot="${id}" aria-pressed="${npSlots.has(id)}" ${ok?"":"disabled"} aria-label="${s.lbl} ${l}">${l}</button>`; }).join("")).join("")
+    +`<div class="tools"><button type="button" id="npStairNone">Aucun escalier</button></div>`;
+  $("npStairCount").textContent=npSlots.size?`· ${npSlots.size} sélectionné${npSlots.size>1?"s":""}`:"· aucun";
+}
+function toggleSlot(id){ npSlots.has(id)?npSlots.delete(id):npSlots.add(id); npUpdate(); }
+$("npStairs").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return;
+  if(b.id==="npStairNone"){ npSlots.clear(); npUpdate(); return; } if(b.dataset.slot) toggleSlot(b.dataset.slot); });
+$("npPrev").addEventListener("click",e=>{ const t=e.target.closest("[data-slot]"); if(t) toggleSlot(t.dataset.slot); });
 
 let npPlan=null;
 function npUpdate(){
@@ -929,7 +968,7 @@ function npUpdate(){
   if(!W||!D){ $("npInfo").textContent="Indique une largeur et une profondeur entre 0,5 et 40 m."; $("npCreate").disabled=true; $("npPrev").innerHTML=""; return; }
   $("npCreate").disabled=false;
   npPlan=planScene(W,D,main,$("npFill").checked);
-  const {Wc,Dc,plats,empty}=npPlan, pad=1.6, vw=Wc+pad*2, vh=Dc+pad*2;
+  const {Wc,Dc,plats,empty}=npPlan, pad=1.6, padR=2.2, padB=2.4, vw=Wc+pad+padR, vh=Dc+pad+padB;
   const refsUsed=[...new Set(plats.map(p=>p.ref))], shade=r=>0.85-refsUsed.indexOf(r)*0.22;
   let svg=`<rect x="${pad}" y="${pad}" width="${Wc}" height="${Dc}" fill="none" stroke="var(--muted)" stroke-width="0.06" stroke-dasharray="0.2 0.15"/>`;
   for(const p of plats){ const s=shapeOf(p.ref,p.rot);
@@ -938,20 +977,26 @@ function npUpdate(){
   if(gcOn){ const seg=(x1,y1,x2,y2)=>svg+=`<line x1="${pad+x1}" y1="${pad+y1}" x2="${pad+x2}" y2="${pad+y2}" stroke="var(--ink)" stroke-width="0.14" stroke-linecap="round"/>`;
     if(openSide!=="back") seg(0,0,Wc,0); if(openSide!=="front") seg(0,Dc,Wc,Dc);
     if(openSide!=="left") seg(0,0,0,Dc); if(openSide!=="right") seg(Wc,0,Wc,Dc); }
-  for(const s of stairsFor($("npStair").value,Wc,Dc)){
-    const x=s.o==="v"?(s.n<0?pad-1.2:pad+Wc):pad+s.a, y=s.o==="v"?pad+s.a:pad-1.2, w=s.o==="v"?1.2:2, h=s.o==="v"?2:1.2;
-    svg+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="var(--panel)" stroke="var(--ink)" stroke-width="0.05"/>`;
-    for(let i=1;i<4;i++) svg+=s.o==="v"?`<line x1="${x+i*0.3}" y1="${y}" x2="${x+i*0.3}" y2="${y+h}" stroke="var(--ink)" stroke-width="0.03"/>`:`<line x1="${x}" y1="${y+i*0.3}" x2="${x+w}" y2="${y+i*0.3}" stroke="var(--ink)" stroke-width="0.03"/>`; }
-  svg+=`<text x="${pad+Wc/2}" y="${pad+Dc+1.05}" text-anchor="middle" font-size="0.62" font-family="IBM Plex Mono, monospace" fill="var(--muted)">PUBLIC · ${fmt(W,0)} m</text>`;
-  svg+=`<text x="${pad+Wc+1.05}" y="${pad+Dc/2}" text-anchor="middle" font-size="0.62" font-family="IBM Plex Mono, monospace" fill="var(--muted)" transform="rotate(90 ${pad+Wc+1.05} ${pad+Dc/2})">${fmt(D,0)} m</text>`;
+  const {stairs:npStairsList,skipped}=stairsFromSlots(npSlots,Wc,Dc), placed=new Set();
+  for(const sl of SLOTS){ const s=slotStair(sl,Wc,Dc); if(!s) continue;
+    const on=npSlots.has(sl.id)&&npStairsList.some(o=>o.o===s.o&&o.line===s.line&&o.a===s.a);
+    const x=s.o==="v"?(s.n<0?pad-1.2:pad+Wc):pad+s.a, y=s.o==="v"?pad+s.a:(s.n<0?pad-1.2:pad+Dc), w=s.o==="v"?1.2:2, h=s.o==="v"?2:1.2;
+    const k=`${x},${y}`; if(placed.has(k)&&!on) continue; placed.add(k);
+    svg+=`<g data-slot="${sl.id}"><title>${sl.lbl}</title><rect x="${x+0.04}" y="${y+0.04}" width="${w-0.08}" height="${h-0.08}" rx="0.06" fill="${on?"var(--panel)":"transparent"}" stroke="${on?"var(--ink)":"var(--muted)"}" stroke-opacity="${on?1:0.55}" stroke-width="${on?0.06:0.04}" ${on?"":'stroke-dasharray="0.15 0.12"'}/>`;
+    if(on) for(let i=1;i<4;i++) svg+=s.o==="v"?`<line x1="${x+i*0.3}" y1="${y}" x2="${x+i*0.3}" y2="${y+h}" stroke="var(--ink)" stroke-width="0.03"/>`:`<line x1="${x}" y1="${y+i*0.3}" x2="${x+w}" y2="${y+i*0.3}" stroke="var(--ink)" stroke-width="0.03"/>`;
+    else svg+=`<text x="${x+w/2}" y="${y+h/2+0.18}" text-anchor="middle" font-size="0.5" fill="var(--muted)" fill-opacity=".8">+</text>`;
+    svg+=`</g>`; }
+  svg+=`<text x="${pad+Wc/2}" y="${pad+Dc+1.95}" text-anchor="middle" font-size="0.62" font-family="IBM Plex Mono, monospace" fill="var(--muted)">PUBLIC · ${fmt(W,0)} m</text>`;
+  svg+=`<text x="${pad+Wc+1.65}" y="${pad+Dc/2}" text-anchor="middle" font-size="0.62" font-family="IBM Plex Mono, monospace" fill="var(--muted)" transform="rotate(90 ${pad+Wc+1.65} ${pad+Dc/2})">${fmt(D,0)} m</text>`;
+  drawSlotButtons(Wc,Dc);
   $("npPrev").setAttribute("viewBox",`0 0 ${vw} ${vh}`); $("npPrev").innerHTML=svg;
   const cnt=refsUsed.map(r=>`<b>${plats.filter(p=>p.ref===r).length} × ${r}</b>`).join(" · ");
   const rawW=parseFloat(String($("npW").value).replace(",",".")), rawD=parseFloat(String($("npD").value).replace(",","."));
   const rounded=(rawW!==W||rawD!==D)?` Dimensions arrondies au pas de 50 cm : ${fmt(W,0)} × ${fmt(D,0)} m.`:"";
   $("npInfo").innerHTML=`${fmt(W*D,0)} m² · ${cnt||"aucun plateau"}${empty?` · <span style="color:var(--danger)">${fmt(empty*C*C,2)} m² non couverts, coche « Compléter » ou change de plateau</span>`:""}.${rounded}`;
-  const st=$("npStair").value; $("npWarn").textContent=st!=="none"&&!stairsFor(st,Wc,Dc).length?"Pas assez de longueur pour l'escalier choisi.":"";
+  $("npWarn").textContent=skipped.length?`Pas la place pour : ${skipped.join(", ")} (bord trop court ou escalier voisin).`:"";
 }
-["npW","npD","npH","npRef","npGc","npOpen","npStair","npFill"].forEach(id=>{ $(id).addEventListener("input",npUpdate); $(id).addEventListener("change",npUpdate); });
+["npW","npD","npH","npRef","npGc","npOpen","npFill"].forEach(id=>{ $(id).addEventListener("input",npUpdate); $(id).addEventListener("change",npUpdate); });
 let npReturn=null;
 function openNP(){
   npReturn=document.activeElement;
@@ -970,7 +1015,7 @@ $("npForm").addEventListener("submit",e=>{
     S.name=$("npName").value.trim()||`Scène ${fmt(Wc*C,0)} × ${fmt(Dc*C,0)} m`;
     S.H=h; S.gc=$("npGc").value; sel.clear();
     S.plats=plats.map(p=>({id:S.nid++,...p,h}));
-    S.stairs=stairsFor($("npStair").value,Wc,Dc);
+    S.stairs=stairsFromSlots(npSlots,Wc,Dc).stairs;
     S.open=sideKeys($("npOpen").value,Wc,Dc);
   });
   syncInputs(); curRef=main; brand=REF[main].brand; drawRefs(); setTool("sel");

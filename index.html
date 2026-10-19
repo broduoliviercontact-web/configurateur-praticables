@@ -165,6 +165,11 @@ ol.mont ul{margin:4px 0 0;padding-left:16px;font-size:12px;color:var(--muted);di
 .sheet .mont-p ol>li>b::before{content:"☐ ";font-weight:400}
 .sheet .mont-p ul{margin:3px 0 0;padding-left:16px;color:#4b5560}
 @media (max-width:760px){ .sheet .mont-p ol{grid-template-columns:1fr} }
+.gcsel{display:grid;gap:6px}
+.gcbtns{display:flex;flex-wrap:wrap;gap:6px}
+.gcbtns button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:7px 11px;font:500 12px var(--f-body);cursor:pointer;min-height:34px}
+.gcbtns button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.gcbtns button.act{border-style:dashed}
 fieldset.stairs{border:1px solid var(--line);border-radius:9px;margin:0;padding:10px 12px 12px;display:grid;gap:8px;min-width:0}
 fieldset.stairs legend{font-size:12px;color:var(--muted);padding:0 4px}
 #npStairCount{font-family:var(--f-mono);color:var(--ink)}
@@ -318,6 +323,10 @@ label.ck.multi-sel{display:none}
             <button class="btn" id="sDup" title="Dupliquer (Ctrl+D)" aria-label="Dupliquer"><span class="tx">Dupliquer</span><span class="ic">⧉</span></button>
             <button class="btn danger" id="sDel" title="Supprimer (Suppr)" aria-label="Supprimer"><span class="tx">Supprimer</span><span class="ic">✕</span></button>
           </div>
+        </div>
+        <div class="gcsel" id="selGcRow">
+          <span class="note">Garde-corps (plein = posé, touche pour enlever ou remettre) <span id="selGcInfo"></span></span>
+          <div class="gcbtns" id="selGc"></div>
         </div>
         <label class="ck multi-sel"><input type="checkbox" id="multi2"> Ajouter d'autres plateaux à la sélection</label>
       </div>
@@ -1159,7 +1168,28 @@ function updateSelPanel(){
   document.getElementById("selCount").textContent=ps.length===1?ps[0].ref:`${ps.length} plateaux`;
   const refs=new Set(ps.map(p=>p.ref)), hh=new Set(ps.map(p=>p.h));
   selRef.value=refs.size===1?[...refs][0]:""; selH.value=hh.size===1?String([...hh][0]):"";
+  renderSelGc();
 }
+/* garde-corps des plateaux sélectionnés : un bouton par côté (plein = garde-corps posé), plus tout enlever / tout remettre */
+const SIDE_KEYS=[["back","Arrière"],["left","Gauche"],["right","Droite"],["front","Avant"],["diag","Biais"]];
+const sideKey=e=>e.o==="d"?"diag":e.o==="h"?(e.n>0?"front":"back"):(e.n<0?"left":"right");
+function selEdges(){ if(!R) return []; const st=new Set(R.stairs.flatMap(stairKeys)); return [...R.out,...R.diags].filter(e=>sel.has(e.pid)&&!st.has(e.k)); }
+function renderSelGc(){
+  const E=selEdges(), row=document.getElementById("selGcRow"); row.hidden=!E.length||S.gc==="none"; if(row.hidden) return;
+  const open=new Set(S.open), by=new Map(); for(const e of E){ const k=sideKey(e); if(!by.has(k)) by.set(k,[]); by.get(k).push(e); }
+  const len=e=>e.o==="d"?e.len:C, mOn=E.filter(e=>!open.has(e.k)).reduce((t,e)=>t+len(e),0), mAll=E.reduce((t,e)=>t+len(e),0);
+  document.getElementById("selGcInfo").textContent=`· ${fmt(mOn,1)} m équipés sur ${fmt(mAll,1)} m de bord libre`;
+  document.getElementById("selGc").innerHTML=SIDE_KEYS.filter(([k])=>by.has(k)).map(([k,l])=>{ const on=by.get(k).some(e=>!open.has(e.k));
+    return `<button type="button" data-side="${k}" aria-pressed="${on}" title="${on?"Enlever":"Remettre"} les garde-corps côté ${l.toLowerCase()}">${l}</button>`; }).join("")
+    +`<button type="button" class="act" data-side="none">Tout enlever</button><button type="button" class="act" data-side="all">Tout remettre</button>`;
+}
+document.getElementById("selGc").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return; const side=b.dataset.side, E=selEdges(), open=new Set(S.open);
+  const list=side==="all"||side==="none"?E:E.filter(x=>sideKey(x)===side); if(!list.length) return;
+  const remove=side==="none"?true:side==="all"?false:list.some(x=>!open.has(x.k)); // côté équipé -> on enlève, sinon on remet
+  act(()=>{ const o=new Set(S.open); for(const x of list) remove?o.add(x.k):o.delete(x.k); S.open=[...o]; });
+  toast(remove?"Garde-corps enlevés (bord laissé ouvert)":"Garde-corps remis");
+});
 selRef.onchange=()=>{ if(!selRef.value) return; let fail=0; const pre=snap();
   for(const p of S.plats) if(sel.has(p.id)){ const old=p.ref; p.ref=selRef.value; if(!fits(geomOf(p).abs,new Set([p.id]))){p.ref=old;fail++;} }
   pushHist(pre); rebuild(true); if(fail) toast(`${fail} plateau(x) sans la place pour cette référence`); };

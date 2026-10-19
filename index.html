@@ -44,7 +44,10 @@ h1 span{color:var(--accent)}
 h2{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;display:flex;justify-content:space-between}
 h2 em{font-style:normal;color:var(--ink);letter-spacing:.04em}
 .seg{display:grid;border:1px solid var(--line);border-radius:7px;overflow:hidden;gap:1px;background:var(--line)}
-.seg.t3{grid-template-columns:repeat(3,1fr)}
+.seg.t3{grid-template-columns:repeat(4,1fr)}
+.seg.t3 button:last-child{grid-column:span 2}
+.trace-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.trace-row .btn{margin-left:auto}
 .seg.t2{grid-template-columns:repeat(2,1fr)}
 .seg button{border:0;background:var(--panel);color:var(--ink);padding:8px 4px;font:500 12px var(--f-body);cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -203,7 +206,9 @@ label.ck.multi-sel{display:none}
   .sub{font-size:11px;margin-top:2px}
   .titlebar .btn{padding:8px 12px;font-size:13px}
   #toolsSec h2{display:none}
-  .seg.t3{grid-template-columns:repeat(6,1fr)}
+  .seg.t3{grid-template-columns:repeat(7,1fr)}
+  .seg.t3 button:last-child{grid-column:auto}
+  .seg.t3 button{font-size:11px}
   .seg button{padding:11px 1px;font-size:12px;min-height:42px}
   .seg kbd,.seg .lg{display:none}
   .seg .sm{display:inline}
@@ -300,8 +305,13 @@ label.ck.multi-sel{display:none}
         <button data-t="esc" aria-label="Escalier"><span class="lg">Escalier</span><span class="sm">Escalier</span><kbd>4</kbd></button>
         <button data-t="bord" aria-label="Bord ouvert"><span class="lg">Bord ouvert</span><span class="sm">Bord</span><kbd>5</kbd></button>
         <button data-t="eff" aria-label="Effacer"><span class="lg">Effacer</span><span class="sm">Effacer</span><kbd>6</kbd></button>
+        <button data-t="trace" aria-label="Tracé"><span class="lg">Tracé</span><span class="sm">Tracé</span><kbd>7</kbd></button>
       </div>
       <label class="ck multi-top" style="margin-top:8px"><input type="checkbox" id="multi"> Sélection multiple (ou Maj + clic)</label>
+      <div class="trace-row" id="traceRow" hidden>
+        <span class="note">Largeur</span><div class="gcbtns" id="traceW"></div>
+        <button class="btn primary" id="traceEnd" hidden>Terminer le tracé</button>
+      </div>
     </section>
 
     <section id="selPanel" hidden>
@@ -452,7 +462,7 @@ label.ck.multi-sel{display:none}
       <details style="margin-top:12px">
         <summary>Raccourcis clavier</summary>
         <dl>
-          <dt>1 à 6</dt><dd>Changer d'outil</dd>
+          <dt>1 à 7</dt><dd>Changer d'outil (7 = tracé)</dd>
           <dt>R</dt><dd>Pivoter la sélection ou le plateau à poser</dd>
           <dt>Flèches</dt><dd>Déplacer la sélection de 50 cm</dd>
           <dt>Suppr</dt><dd>Supprimer la sélection</dd>
@@ -844,6 +854,8 @@ const ghost=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshBasicMateria
 ghost.rotation.x=-Math.PI/2; ghost.visible=false; scene.add(ghost);
 const zoneG=new THREE.Mesh(new THREE.BoxGeometry(1,0.04,1),new THREE.MeshBasicMaterial({color:0xe0a800,transparent:true,opacity:0.3}));
 zoneG.visible=false; scene.add(zoneG);
+const traceG=new THREE.Group(); scene.add(traceG);
+const traceMat=new THREE.MeshBasicMaterial({color:0xe0a800,transparent:true,opacity:0.45,side:DS}), traceBad=new THREE.MeshBasicMaterial({color:0xc2412d,transparent:true,opacity:0.4,side:DS});
 const edgeMark=new THREE.Mesh(new THREE.BoxGeometry(1,0.06,0.06),new THREE.MeshBasicMaterial({color:0xe0a800}));
 edgeMark.visible=false; scene.add(edgeMark);
 
@@ -1013,6 +1025,60 @@ function duplicate(){
 function delSel(){ if(!sel.size) return; const n=sel.size; act(()=>{ S.plats=S.plats.filter(p=>!sel.has(p.id)); sel.clear(); }); toast(`${n} plateau(x) supprimé(s)`); }
 function selectAll(){ sel=new Set(S.plats.map(p=>p.id)); setTool("sel"); rebuild(false); }
 
+/* ================= Tracé façon « route » : départ, puis tronçons droits successifs ================= */
+const trace={start:null,w:null};
+const traceRef=()=>REF[curRef].shape==="rect"?curRef:"PRI-R21";
+function traceWidths(){ const r=REF[traceRef()]; return [...new Set([r.D,r.W])].sort((a,b)=>a-b); }
+function renderTraceW(){
+  const ws=traceWidths(); if(!ws.includes(trace.w)) trace.w=ws[ws.length-1];
+  document.getElementById("traceW").innerHTML=ws.map(w=>`<button type="button" data-w="${w}" aria-pressed="${w===trace.w}">${fmt(w,w%1?1:0)} m</button>`).join("")+`<span class="note">${traceRef()}</span>`;
+  document.getElementById("traceEnd").hidden=!trace.start;
+}
+document.getElementById("traceW").addEventListener("click",e=>{ const b=e.target.closest("button[data-w]"); if(!b) return; trace.w=+b.dataset.w; renderTraceW(); });
+document.getElementById("traceEnd").onclick=()=>endTrace();
+function endTrace(silent){ const had=!!trace.start; trace.start=null; while(traceG.children.length){ const c=traceG.children.pop(); c.geometry?.dispose(); }
+  const b=document.getElementById("traceEnd"); if(b) b.hidden=true; if(had&&!silent) toast("Tracé terminé"); }
+const gridPt=p=>[Math.round(p.x/C),Math.round(p.z/C)];
+/* tronçon orthogonal depuis le départ vers le point visé (la plus grande direction l'emporte) */
+function traceEndPt(a,g){ const dx=g[0]-a[0], dz=g[1]-a[1]; return Math.abs(dx)>=Math.abs(dz)?[g[0],a[1]]:[a[0],g[1]]; }
+/* plateaux d'un tronçon : bande de la largeur choisie, prolongée d'une demi-largeur aux deux bouts (angles pleins), cases déjà occupées sautées */
+function tracePlan(a,b){
+  const wc=Math.round(trace.w/C), lo=Math.floor(wc/2), horiz=a[1]===b[1]&&a[0]!==b[0];
+  const r=horiz?{x0:Math.min(a[0],b[0])-lo,x1:Math.max(a[0],b[0])+wc-lo,z0:a[1]-lo,z1:a[1]-lo+wc}:{x0:a[0]-lo,x1:a[0]-lo+wc,z0:Math.min(a[1],b[1])-lo,z1:Math.max(a[1],b[1])+wc-lo};
+  const W=r.x1-r.x0, D=r.z1-r.z0, occ=new Uint8Array(W*D), polys=S.plats.map(p=>geomOf(p).abs);
+  for(let z=0;z<D;z++) for(let x=0;x<W;x++){ const c=[r.x0+x+0.5,r.z0+z+0.5]; if(polys.some(P=>pip(c,P))) occ[z*W+x]=1; }
+  const main=traceRef(), along=[0,1].sort((p,q)=>{ const sp=shapeOf(main,p), sq=shapeOf(main,q); const ok=s=>(horiz?s.d:s.w)===wc; return ok(sq)-ok(sp); });
+  const order=[...along.map(rot=>({ref:main,rot})),...fillRefs(main).flatMap(ref=>along.map(rot=>({ref,rot})))];
+  // pose depuis le point de départ : dans le sens inverse, on travaille sur la bande retournée puis on remet à l'endroit
+  const fwd=horiz?(b[0]>=a[0]):(b[1]>=a[1]), M=new Uint8Array(W*D);
+  for(let z=0;z<D;z++) for(let x=0;x<W;x++){ const sx=!fwd&&horiz?W-1-x:x, sz=!fwd&&!horiz?D-1-z:z; M[z*W+x]=occ[sz*W+sx]; }
+  const res=[], fitsAt=(x,z,s)=>{ if(x+s.w>W||z+s.d>D) return false; for(let j=0;j<s.d;j++) for(let i=0;i<s.w;i++) if(M[(z+j)*W+x+i]) return false; return true; };
+  const place=(x,z)=>{ if(M[z*W+x]) return; for(const o of order){ const s=shapeOf(o.ref,o.rot); if(!fitsAt(x,z,s)) continue;
+    for(let j=0;j<s.d;j++) for(let i=0;i<s.w;i++) M[(z+j)*W+x+i]=1; res.push({o,s,x,z}); return; } };
+  if(horiz){ for(let x=0;x<W;x++) for(let z=0;z<D;z++) place(x,z); } else { for(let z=0;z<D;z++) for(let x=0;x<W;x++) place(x,z); }
+  const out=res.map(({o,s,x,z})=>({ref:o.ref,rot:o.rot,x:r.x0+(!fwd&&horiz?W-x-s.w:x),z:r.z0+(!fwd&&!horiz?D-z-s.d:z)}));
+  return out.filter(c=>fits(geomOf(c).abs,new Set()));
+}
+function tracePreview(){
+  while(traceG.children.length){ const c=traceG.children.pop(); c.geometry?.dispose(); }
+  const p=onPlane(S.H); if(!p) return; const g=gridPt(p);
+  const dot=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.04,16),traceMat); 
+  if(!trace.start){ dot.position.set(g[0]*C,S.H+0.02,g[1]*C); traceG.add(dot); return; }
+  const b=traceEndPt(trace.start,g); dot.position.set(trace.start[0]*C,S.H+0.02,trace.start[1]*C); traceG.add(dot);
+  if(b[0]===trace.start[0]&&b[1]===trace.start[1]) return;
+  for(const c of tracePlan(trace.start,b)){ const m=new THREE.Mesh(deckGeom(geomOf(c).abs,0.1),traceMat); m.rotation.x=-Math.PI/2; m.position.y=S.H-0.1; traceG.add(m); }
+}
+function traceClick(){
+  const p=onPlane(S.H); if(!p) return; const g=gridPt(p);
+  if(!trace.start){ trace.start=g; renderTraceW(); tracePreview(); toast("Départ posé : touche le point suivant"); return; }
+  const b=traceEndPt(trace.start,g);
+  if(b[0]===trace.start[0]&&b[1]===trace.start[1]){ endTrace(); return; } // même point touché deux fois : fin
+  const add=tracePlan(trace.start,b);
+  if(add.length) act(()=>{ for(const c of add) S.plats.push({id:S.nid++,ref:c.ref,x:c.x,z:c.z,rot:c.rot,h:S.H}); });
+  else toast("Déjà couvert par des plateaux");
+  trace.start=b; tracePreview();
+}
+
 /* ================= Pointeur ================= */
 let ptr=null;
 cv.addEventListener("pointerdown",e=>{
@@ -1064,6 +1130,7 @@ cv.addEventListener("pointerleave",()=>{ if(!ptr){ ghost.visible=false; edgeMark
 function click(e,P){
   setRay(e);
   if(tool==="sel"){ if(P.clear&&!multi&&!e.shiftKey&&(sel.size||selStair)){ sel.clear(); selStair=null; rebuild(false); } return; }
+  if(tool==="trace"){ traceClick(); return; }
   if(tool==="pose"){ const p=onPlane(S.H); if(!p) return; const c=placeAt(p);
     if(!fits(c.abs,new Set())){ toast("Emplacement occupé"); return; }
     act(()=>S.plats.push({id:S.nid++,ref:curRef,x:c.x,z:c.z,rot:curRot,h:S.H})); hover(e); return; }
@@ -1082,6 +1149,7 @@ function click(e,P){
 }
 function hover(e){
   ghost.visible=false; edgeMark.visible=false; setRay(e);
+  if(tool==="trace"){ tracePreview(); return; }
   if(tool==="pose"){ const p=onPlane(S.H); if(!p) return; const c=placeAt(p);
     ghost.geometry.dispose(); ghost.geometry=deckGeom(c.abs,0.1); ghost.position.y=S.H-0.1;
     ghost.material.color.set(fits(c.abs,new Set())?0xe0a800:0xc2412d); ghost.visible=true; }
@@ -1105,14 +1173,15 @@ function fillZone(z){
 }
 
 /* ================= Panneau ================= */
-const LBL={sel:"Sélection",pose:"Poser",zone:"Zone",esc:"Escalier",bord:"Bord ouvert",eff:"Effacer"};
+const LBL={sel:"Sélection",pose:"Poser",zone:"Zone",esc:"Escalier",bord:"Bord ouvert",eff:"Effacer",trace:"Tracé"};
 const HINTS={sel:"Touchez un plateau ou un escalier pour le sélectionner, glissez-le pour le déplacer. Glissez ailleurs pour tourner la vue.",
   pose:"Touchez la grille pour poser le plateau choisi. R pour pivoter.",
   zone:"Glissez sur la grille pour remplir un rectangle avec le plateau choisi.",
   esc:"Touchez un bord libre d'au moins 1 m pour poser un escalier, ou un escalier pour le retirer.",
   bord:"Touchez un bord pour le laisser sans garde-corps (face public, raccord avec une autre structure).",
-  eff:"Touchez un plateau ou un escalier pour le retirer."};
-function setTool(t){ tool=t;
+  eff:"Touchez un plateau ou un escalier pour le retirer.",
+  trace:"Touchez un point de départ, puis chaque point suivant : un tronçon droit de praticables se pose, le suivant repart du bout. Échap ou « Terminer » pour finir."};
+function setTool(t){ if(t!=="trace") endTrace(true); tool=t; const tr=document.getElementById("traceRow"); if(tr){ tr.hidden=t!=="trace"; if(t==="trace") renderTraceW(); }
   document.querySelectorAll("#tools button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===t));
   document.getElementById("hint").textContent=HINTS[t]; ghost.visible=edgeMark.visible=zoneG.visible=false; updateHud(); }
 function updateHud(){
@@ -1242,11 +1311,12 @@ document.addEventListener("keydown",e=>{
     if(dk){ e.preventDefault(); slideStair(dk); return; }
   }
   if(k==="delete"||k==="backspace"){ if(sel.size){ e.preventDefault(); delSel(); } return; }
+  if(k==="escape"&&trace.start){ endTrace(); return; }
   if(k==="escape"){ sel.clear(); selStair=null; rebuild(false); setTool("sel"); return; }
   if(k==="r"){ sel.size?rotateSel():rotateCur(); return; }
   const arrows={arrowleft:[-1,0],arrowright:[1,0],arrowup:[0,-1],arrowdown:[0,1]};
   if(arrows[k]&&sel.size){ e.preventDefault(); moveSel(...arrows[k]); return; }
-  const tl=["sel","pose","zone","esc","bord","eff"]; if(/^[1-6]$/.test(k)) setTool(tl[+k-1]);
+  const tl=["sel","pose","zone","esc","bord","eff","trace"]; if(/^[1-7]$/.test(k)) setTool(tl[+k-1]);
 });
 
 /* ================= Tiroir mobile ================= */

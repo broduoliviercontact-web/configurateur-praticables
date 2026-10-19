@@ -11,6 +11,7 @@ En ligne : https://configurateur-praticables.vercel.app/
 Ouvrir `index.html` dans un navigateur. Aucun serveur n'est nécessaire. Three.js est chargé depuis un CDN, il faut donc une connexion internet.
 
 - **Nouveau projet** : un assistant demande le nom, la largeur et la profondeur de la scène, la hauteur, le plateau principal, le bord sans garde-corps et les escaliers (12 emplacements au choix : avant, arrière et côtés, chacun à gauche / au centre / à droite, vus du public), montre un aperçu du plan et génère la scène (avec complément en petits formats si besoin)
+- **Tracé (7)**, façon route : touche un point de départ, puis chaque point suivant ; un tronçon droit de praticables se pose (largeur 1 m ou 2 m selon le plateau choisi), le suivant repart du bout, les angles sont pleins. Les cases déjà couvertes sont sautées, ce qui permet de raccorder une avancée ou un catwalk à la scène. Échap, « Terminer le tracé » ou un 2e appui au même endroit pour finir ; chaque tronçon s'annule séparément.
 - **Garde-corps d'une sélection** : dans le panneau Sélection, un bouton par côté (arrière, gauche, droite, avant, biais) enlève ou remet les garde-corps des plateaux sélectionnés ; « Tout enlever » / « Tout remettre ». Un bord sans garde-corps est un bord ouvert (trait jaune).
 - **Escaliers** : avec l'outil Sélection, touche un escalier pour le sélectionner, glisse-le pour le déplacer (le long du bord ou sur un autre bord), décale-le de 50 cm ou supprime-le depuis le panneau
 - Sur téléphone, le panneau devient un tiroir sous la vue 3D

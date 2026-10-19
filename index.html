@@ -404,6 +404,10 @@ label.ck.multi-sel{display:none}
         <button class="btn" id="vLbl">Masquer étiquettes</button>
         <button class="btn primary" id="vPlan">Plan de montage 2D</button>
       </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" id="vImg">Image pour le client</button>
+        <button class="btn" id="vDxf">Plan DXF (AutoCAD)</button>
+      </div>
     </section>
 
     <section>
@@ -455,8 +459,22 @@ label.ck.multi-sel{display:none}
 </div>
 
 <div class="planwrap" id="planModal" hidden>
-  <div class="planbar"><b>Plan de montage</b><span class="sp"></span><button class="btn" id="planPrint">Imprimer</button><button class="btn primary" id="planClose">Fermer</button></div>
+  <div class="planbar"><b>Plan de montage</b><span class="sp"></span><button class="btn" id="planDxf">DXF</button><button class="btn" id="planPrint">Imprimer</button><button class="btn primary" id="planClose">Fermer</button></div>
   <div class="sheet" id="planSheet"></div>
+</div>
+
+<div class="modal" id="imgModal" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="imgTitle" style="width:min(980px,100%)">
+    <h3 id="imgTitle">Image pour le client</h3>
+    <div class="row">
+      <label class="ck"><input type="checkbox" id="imgLbl"> Étiquettes des plateaux</label>
+      <label class="ck"><input type="checkbox" id="imgGrid"> Grille au sol</label>
+      <label class="ck"><input type="checkbox" id="imgBand" checked> Bandeau avec nom et dimensions</label>
+    </div>
+    <img id="imgOut" alt="Vue 3D de la scène" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff">
+    <p class="note" id="imgNote">Image prise sous l'angle de la vue 3D actuelle : tourne la vue avant d'ouvrir cette fenêtre pour changer d'angle. Sur téléphone, appui long sur l'image pour l'enregistrer.</p>
+    <div class="actions"><button type="button" class="btn" id="imgClose">Fermer</button><button type="button" class="btn primary" id="imgSave">Télécharger le PNG</button></div>
+  </div>
 </div>
 
 <div class="modal" id="npModal" hidden>
@@ -860,7 +878,7 @@ function rebuild(commit){
     cyl(0.017,1.0,M.gc,ax,H+0.5,az); cyl(0.017,1.0,M.gc,bx,H+0.5,bz);
     bar(V(ax,H+1,az),V(bx,H+1,bz),0.017,M.gc); bar(V(ax,H+0.5,az),V(bx,H+0.5,bz),0.012,M.gc); bar(V(ax,H+0.1,az),V(bx,H+0.1,bz),0.012,M.gc);
   }
-  for(const k of R.open){ const e=R.ex.get(k); const [x1,z1,x2,z2]=segCells(e);
+  if(!imgMode) for(const k of R.open){ const e=R.ex.get(k); const [x1,z1,x2,z2]=segCells(e);
     bar(V(x1*C,e.h+0.008,z1*C),V(x2*C,e.h+0.008,z2*C),0.012,M.open); }
   for(const s of R.stairs){
     const [x1,z1,x2,z2]=segCells(s,2).map(v=>v*C), H=s.h, n=Math.max(2,Math.ceil(H/0.2)), rise=H/n, go=0.26;
@@ -1396,7 +1414,7 @@ $("cartCap").onchange=e=>act(()=>{ S.cart=Math.min(40,Math.max(1,Math.round(+e.t
 $("pExport").onclick=()=>{
   const blob=new Blob([JSON.stringify({format:"configurateur-praticables",v:1,name:S.name,data:S},null,1)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-  a.download=((S.name||"projet").replace(/[\\/:*?"<>|]+/g,"_").trim()||"projet")+".praticables.json";
+  a.download=fileName(".praticables.json");
   document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
   toast("Fichier exporté dans tes téléchargements");
 };
@@ -1555,6 +1573,85 @@ function openPlan(){
 $("vPlan").onclick=openPlan; $("bPlan").onclick=openPlan;
 $("planClose").onclick=()=>{ $("planModal").hidden=true; };
 $("planPrint").onclick=()=>{ try{ window.print(); }catch(e){} };
+
+/* ================= Exports : DXF et image ================= */
+const fileName=ext=>((S.name||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9._-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60)||"scene-praticables")+ext;
+function download(blob,name){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500); }
+/* DXF R12, en mètres, même format que Salle 3D : X vers la droite (jardin → cour), Y vers l'arrière, public en bas ; un calque par famille */
+const DXF_LAYERS={ASD_PLATEAUX:30,ASD_PIEDS:9,ASD_NUMEROS:7,ASD_GARDE_CORPS:1,ASD_BORD_OUVERT:2,ASD_ESCALIERS:5,ASD_JUPES:6,ASD_COTES:8,ASD_TEXTE:7};
+const dxfText=t=>[...String(t)].map(ch=>ch.charCodeAt(0)<128?ch:"\\U+"+ch.charCodeAt(0).toString(16).toUpperCase().padStart(4,"0")).join("");
+function buildDxf(){
+  const {L,x0,z0,x1,z1}=planData(), X=v=>(v-x0)*C, Y=v=>-(v-z0)*C+(z1-z0)*C, W=(x1-x0)*C, D=(z1-z0)*C;
+  const out=[], put=(...kv)=>out.push(...kv.map(String)), n=v=>(+v).toFixed(4);
+  put(0,"SECTION",2,"HEADER",9,"$ACADVER",1,"AC1009",9,"$INSUNITS",70,6,0,"ENDSEC");
+  put(0,"SECTION",2,"TABLES",0,"TABLE",2,"LTYPE",70,1,0,"LTYPE",2,"CONTINUOUS",70,0,3,"Solid line",72,65,73,0,40,0,0,"ENDTAB");
+  put(0,"TABLE",2,"LAYER",70,Object.keys(DXF_LAYERS).length); for(const [k,c] of Object.entries(DXF_LAYERS)) put(0,"LAYER",2,k,70,0,62,c,6,"CONTINUOUS");
+  put(0,"ENDTAB",0,"ENDSEC",0,"SECTION",2,"ENTITIES");
+  const poly=(l,pts,closed=1)=>{ put(0,"POLYLINE",8,l,66,1,70,closed); for(const [x,y] of pts) put(0,"VERTEX",8,l,10,n(x),20,n(y)); put(0,"SEQEND",8,l); };
+  const line=(l,a,b,c,d)=>put(0,"LINE",8,l,10,n(a),20,n(b),11,n(c),21,n(d));
+  const text=(l,x,y,h,t,rot=0)=>put(0,"TEXT",8,l,10,n(x),20,n(y),40,n(h),1,dxfText(t),...(rot?[50,rot]:[]),72,1,73,2,11,n(x),21,n(y));
+  L.forEach(({p,g},i)=>{ poly("ASD_PLATEAUX",g.abs.map(([x,z])=>[X(x),Y(z)]));
+    const ext=Math.min(g.w,g.d)*C, h=Math.min(0.3,ext*0.35);
+    text("ASD_NUMEROS",X(g.cx),Y(g.cz)+h*0.45,h,String(i+1)); text("ASD_NUMEROS",X(g.cx),Y(g.cz)-h*0.6,h*0.45,`${p.ref} h${fmt(p.h)}`);
+    for(const [vx,vz] of g.abs){ const dx=g.cx-vx, dz=g.cz-vz, l=Math.hypot(dx,dz), k=0.13/C/l; put(0,"CIRCLE",8,"ASD_PIEDS",10,n(X(vx+dx*k)),20,n(Y(vz+dz*k)),40,n(0.025)); } });
+  for(const g of R.pieces){ const [a,b,c,d]=g.diag?[g.x1,g.z1,g.x2,g.z2]:segCells(g,g.L); line("ASD_GARDE_CORPS",X(a),Y(b),X(c),Y(d)); }
+  for(const k of R.open){ const e=R.ex.get(k); if(!e) continue; const [a,b,c,d]=e.o==="d"?[e.x1,e.z1,e.x2,e.z2]:segCells(e); line("ASD_BORD_OUVERT",X(a),Y(b),X(c),Y(d)); }
+  for(const e of skirtEdges(R)){ const [a,b,c,d]=e.o==="d"?[e.x1,e.z1,e.x2,e.z2]:segCells(e), nx=e.o==="d"?e.nx:(e.o==="v"?e.n:0), nz=e.o==="d"?e.nz:(e.o==="h"?e.n:0);
+    line("ASD_JUPES",X(a)+nx*0.03,Y(b)-nz*0.03,X(c)+nx*0.03,Y(d)-nz*0.03); }
+  for(const s of R.stairs){ const [a,b,c,d]=segCells(s,2), k=Math.max(2,Math.ceil(s.h/0.2)), run=0.26*k, nx=s.o==="v"?s.n:0, nz=s.o==="h"?s.n:0, e=ESCALIERS.find(e=>s.h>=e.min&&s.h<=e.max);
+    const P=[[X(a),Y(b)],[X(c),Y(d)],[X(c)+nx*run,Y(d)-nz*run],[X(a)+nx*run,Y(b)-nz*run]]; poly("ASD_ESCALIERS",P);
+    for(let i=1;i<k;i++){ const t=run*i/k; line("ASD_ESCALIERS",X(a)+nx*t,Y(b)-nz*t,X(c)+nx*t,Y(d)-nz*t); }
+    text("ASD_ESCALIERS",(P[0][0]+P[2][0])/2,(P[0][1]+P[2][1])/2,0.14,e?e.ref:"Escalier"); }
+  // cotes générales
+  const top=D+0.8, left=-0.8; line("ASD_COTES",0,top,W,top); line("ASD_COTES",0,top-0.1,0,top+0.1); line("ASD_COTES",W,top-0.1,W,top+0.1); text("ASD_COTES",W/2,top+0.2,0.22,`${fmt(W,W%1?1:0)} m`);
+  line("ASD_COTES",left,0,left,D); line("ASD_COTES",left-0.1,0,left+0.1,0); line("ASD_COTES",left-0.1,D,left+0.1,D); text("ASD_COTES",left-0.25,D/2,0.22,`${fmt(D,D%1?1:0)} m`,90);
+  const T=lastTot||totals();
+  text("ASD_TEXTE",W/2,-1.0,0.28,"PUBLIC");
+  text("ASD_TEXTE",W/2,top+0.9,0.35,S.name||"Scène praticables");
+  text("ASD_TEXTE",W/2,top+0.5,0.18,`${S.plats.length} plateaux · plancher ${[...new Set(S.plats.map(p=>fmt(p.h)))].join("/")} m · ${T.est?"env. ":""}${Math.round(T.kg)} kg · ${T.weakest.chg} kg/m2`);
+  put(0,"ENDSEC",0,"EOF");
+  return out.join("\r\n")+"\r\n";
+}
+function exportDxf(){ if(!S.plats.length){ toast("Pose au moins un plateau"); return; }
+  download(new Blob([buildDxf()],{type:"application/dxf"}),fileName(".dxf")); toast("Plan DXF exporté (mètres, calques ASD_…)"); }
+$("vDxf").onclick=exportDxf; $("planDxf").onclick=exportDxf;
+
+/* image : rendu de la vue actuelle en 2400 × 1500, sans sélection ni aides, avec un bandeau titre */
+let imgBlob=null, imgMode=false;
+function renderImage(){
+  const Wp=2400, Hp=1500, old=new THREE.Vector2(); renderer.getSize(old);
+  const keep={lbl:showLbl,grid:grid.visible,bg:scene.background,sel:new Set(sel),st:selStair,aspect:cam.aspect,pr:renderer.getPixelRatio()};
+  showLbl=$("imgLbl").checked; sel=new Set(); selStair=null; imgMode=true; rebuild(false);
+  const camPos=cam.position.clone();
+  grid.visible=$("imgGrid").checked; ghost.visible=edgeMark.visible=zoneG.visible=false; scene.background=new THREE.Color(0xf3f5f7);
+  renderer.setPixelRatio(1); renderer.setSize(Wp,Hp,false); cam.aspect=Wp/Hp; cam.updateProjectionMatrix();
+  { // même angle que la vue, recul ajusté pour que la scène remplisse l'image
+    const all=S.plats.flatMap(p=>geomOf(p).abs), m=S.stairs.length?1.4:0.4, mh=Math.max(...S.plats.map(p=>p.h));
+    const bx=[Math.min(...all.map(v=>v[0]))*C-m,Math.max(...all.map(v=>v[0]))*C+m], bz=[Math.min(...all.map(v=>v[1]))*C-m,Math.max(...all.map(v=>v[1]))*C+m];
+    const tgt=new THREE.Vector3((bx[0]+bx[1])/2,mh*0.4,(bz[0]+bz[1])/2), r=Math.hypot(bx[1]-bx[0],bz[1]-bz[0],mh+1)/2, vf=cam.fov*Math.PI/180;
+    const dir=cam.position.clone().sub(ctl.target).normalize(); cam.position.copy(tgt).addScaledVector(dir,r/Math.sin(vf/2)*0.72); cam.lookAt(tgt); }
+  renderer.render(scene,cam);
+  const c=document.createElement("canvas"), band=$("imgBand").checked?150:0; c.width=Wp; c.height=Hp+band; const g=c.getContext("2d");
+  g.drawImage(renderer.domElement,0,0);
+  if(band){ const T=lastTot||totals(), {x0,z0,x1,z1}=planData();
+    g.fillStyle="#14181c"; g.fillRect(0,Hp,Wp,band);
+    g.fillStyle="#e0a800"; g.fillRect(0,Hp,14,band);
+    g.fillStyle="#ffffff"; g.font="700 58px 'Barlow Condensed', 'Arial Narrow', sans-serif"; g.textBaseline="middle"; g.fillText(S.name||"Scène praticables",60,Hp+52);
+    g.fillStyle="#b9c0c7"; g.font="400 32px 'IBM Plex Sans', Arial, sans-serif";
+    g.fillText(`${fmt((x1-x0)*C,1)} × ${fmt((z1-z0)*C,1)} m · plancher ${[...new Set(S.plats.map(p=>fmt(p.h)))].join(" / ")} m · ${S.plats.length} praticables ${[...new Set(S.plats.map(p=>p.ref))].join(", ")} · ${R.stairs.length} escalier${R.stairs.length>1?"s":""}`,60,Hp+108);
+    g.textAlign="right"; g.fillText(new Date().toLocaleDateString("fr-FR"),Wp-60,Hp+108); g.textAlign="left"; }
+  // retour à l'état normal
+  cam.position.copy(camPos); cam.lookAt(ctl.target); imgMode=false;
+  showLbl=keep.lbl; sel=keep.sel; selStair=keep.st; grid.visible=keep.grid; scene.background=keep.bg;
+  renderer.setPixelRatio(keep.pr); renderer.setSize(old.x,old.y,false); cam.aspect=keep.aspect; cam.updateProjectionMatrix(); rebuild(false);
+  c.toBlob(b=>{ imgBlob=b; const u=$("imgOut").src; if(u&&u.startsWith("blob:")) URL.revokeObjectURL(u); $("imgOut").src=URL.createObjectURL(b); },"image/png");
+}
+function openImg(){ if(!S.plats.length){ toast("Pose au moins un plateau"); return; } $("imgModal").hidden=false; renderImage(); }
+$("vImg").onclick=openImg;
+["imgLbl","imgGrid","imgBand"].forEach(id=>$(id).onchange=renderImage);
+$("imgClose").onclick=()=>{ $("imgModal").hidden=true; };
+$("imgModal").addEventListener("pointerdown",e=>{ if(e.target===$("imgModal")) $("imgModal").hidden=true; });
+$("imgSave").onclick=()=>{ if(imgBlob){ download(imgBlob,fileName(".png")); toast("Image téléchargée"); } };
 
 /* ================= Pont avec Salle 3D ================= */
 function stagePayload(){

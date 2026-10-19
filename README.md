@@ -27,6 +27,11 @@ Ouvrir `index.html` dans un navigateur. Aucun serveur n'est nécessaire. Three.j
 
 Bouton « Plan de montage 2D » : plateaux numérotés avec leur référence, cotes générales et en chaîne, garde-corps, bords ouverts, jupes, escaliers (référence ESC), tableau des positions (X ; Y depuis le coin arrière gauche vu du public) et nomenclature avec les poids. « Imprimer » sort la feuille en A4 paysage (plan en page 1, tableaux en page 2).
 
+## Exports
+
+- **Plan DXF (AutoCAD)** : même format que Salle 3D (DXF R12, mètres, textes accentués encodés pour AutoCAD). X vers la droite (jardin → cour), Y vers l'arrière, public en bas. Calques : `ASD_PLATEAUX` (contours), `ASD_PIEDS` (cercles Ø 5 cm), `ASD_NUMEROS` (n° + référence + hauteur), `ASD_GARDE_CORPS`, `ASD_BORD_OUVERT`, `ASD_ESCALIERS` (emprise, marches, référence), `ASD_JUPES`, `ASD_COTES`, `ASD_TEXTE` (titre, poids, PUBLIC). Aussi dans la barre du plan de montage.
+- **Image pour le client** : PNG 2400 × 1500 de la vue 3D actuelle (même angle), sans sélection ni aides d'édition, avec un bandeau nom / dimensions / date ; étiquettes et grille au choix.
+
 ## Ordre de montage
 
 Liste par étapes calculée à partir du projet : préparation, pieds, plateaux rang par rang (numéros du plan), mise à niveau, jonctions, garde-corps (par côté, bords laissés ouverts), escaliers (référence et position), jupes, contrôle final. Chaque étape se coche (enregistré avec le projet) ; « Copier l'ordre de montage » pour l'envoyer à l'équipe. L'ordre de montage est aussi imprimé avec le plan de montage.

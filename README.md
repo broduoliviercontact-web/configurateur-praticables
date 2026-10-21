@@ -62,6 +62,17 @@ Outil **Barrières (8)** : au sol, touche un point de départ puis chaque point 
 - **Coton gratté sur les Vauban** : réglages « Coton gratté sur les Vauban » (aucun, une face, deux faces), « Ampleur sur les Vauban » (tendue × 1 ou plissée) et « Hauteur habillée » (1,10 m = barrière entière, depuis le sol), même laize que la jupe (1,30 m par défaut). Métrage = longueur des lignes Vauban (au pas de 2,20 m) × faces × ampleur, en long si la hauteur + 5 cm tient dans la laize, sinon en lés verticaux ; arrondi au 0,5 m, hors ourlets. Colliers de serrage : ≈ 4 par barrière et par face (à valider). Le tissu est dessiné en 3D sur les barrières.
 - L'outil Effacer retire une ligne entière. Les lignes sont enregistrées avec le projet, comptées dans la nomenclature (rubrique *Barrières et potelets*), dessinées sur le plan de montage et exportées dans le DXF (calque `ASD_BARRIERES`). Elles ne partent pas vers Salle 3D, qui a ses propres outils de tracé.
 
+## Devis Impact Événement
+
+Bouton « Devis Impact Événement » sous la nomenclature : estimation de location de la scène au tarif relevé sur les devis Impact Événement des 14 et 20 octobre 2026 (matériel Stage82, prix HT par événement).
+
+- Lignes calculées depuis la scène : praticables 2 × 1 (311001 · 19,25 €), un jeu de 4 pieds par plateau selon la hauteur (0,20 m 1,75 € déduit du devis remisé, 1,00 m 3,50 €, 1,20 m 7,50 €), mâchoires 360034 (0,875 €, 1 par paire de plateaux voisins à la même hauteur), escaliers 1,20 m modulables (86,625 €), rambardes 35006 de 2 m et 35005 de 1 m (8,75 €).
+- Ce qui n'a pas de prix sur les devis (autres hauteurs d'escalier ou de pieds, petits formats, rambardes de 0,50 m) sort « à demander » et n'entre pas dans le total.
+- Quantités et prix unitaires modifiables ligne par ligne (marqués « retouché »), remise en % sur le matériel (le devis du 20/10 était à −20 %), transport automatique (camion 12 m³ jusqu'à 20 plateaux : 75 € + 75 €, au-delà camion 50 m³ 9 T : 1 000 € aller-retour) ou choisi.
+- Dates de livraison et de reprise, lieu ; totaux HT, TVA 20 %, TTC ; « Imprimer » ; « Copier la demande » donne la liste sans prix, prête à coller dans un e-mail à Impact.
+- Tout est enregistré avec le projet. Grille de prix : constante `IMPACT` en haut de la section du script.
+- Contrôle : sur la scène 10 × 10 m à 1,20 m du devis de décembre, l'estimation donne 2 707,63 € HT contre 2 703,62 € chez Impact (22 jeux de pieds y étaient à 5,25 €, et Impact compte 75 mâchoires là où la règle en donne 85).
+
 ## Lien avec Salle 3D
 
 - Dans [Salle 3D](https://salle-3d-tools.vercel.app), une scène, une régie ou la scène FIP 360 sélectionnée affiche **« Détailler en praticables ASD ↗ »** : le configurateur s'ouvre avec ses dimensions (P = ouverture, L = profondeur, H = hauteur) et son nom.

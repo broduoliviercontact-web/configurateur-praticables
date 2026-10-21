@@ -511,6 +511,7 @@ label.ck.multi-sel{display:none}
         <button class="btn" id="vTop">Dessus</button>
         <button class="btn" id="vLegs">Masquer pieds</button>
         <button class="btn" id="vLbl">Masquer étiquettes</button>
+        <button class="btn" id="vDims">Masquer cotes au sol</button>
         <button class="btn primary" id="vPlan">Plan de montage 2D</button>
       </div>
       <div class="row" style="margin-top:8px">
@@ -712,7 +713,7 @@ const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,ski
 const defaultDevis=()=>({rem:0,tr:"auto",ov:{},liv:"",rep:"",lieu:"Les Grandes Serres de Pantin"});
 let S=defaultS(), curPid=null, pendingLink=null;
 let firstRun=false, selStair=null;
-let tool="sel", curRef="PRI-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, multi=false;
+let tool="sel", curRef="PRI-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, showDims=true, multi=false;
 let sel=new Set(), hist=[], fut=[];
 const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name,skirt:S.skirt,cart:S.cart,moq:S.moq,moqW:S.moqW,jupA:S.jupA,jupL:S.jupL,bars:S.bars,vbF:S.vbF,vbA:S.vbA,vbH:S.vbH,annos:S.annos});
 function restore(js){ Object.assign(S,JSON.parse(js)); sel=new Set([...sel].filter(id=>S.plats.some(p=>p.id===id))); syncInputs(); }
@@ -1075,6 +1076,31 @@ function bar(p1,p2,r,mat){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r
   m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),p2.clone().sub(p1).normalize()); world.add(m); }
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const lblCache=new Map();
+/* cotes au sol : ouverture devant la scène (côté public), profondeur sur le côté droit, en grand, au-delà des escaliers */
+const dimMat=new THREE.MeshBasicMaterial({color:0x1f5fa8});
+function bigLabel(text,x,z,w){
+  const key="§"+text; let mat=lblCache.get(key);
+  if(!mat){ const c=document.createElement("canvas"); c.width=512; c.height=128; const g=c.getContext("2d");
+    g.fillStyle="#1f5fa8"; g.beginPath(); g.roundRect?g.roundRect(6,14,500,100,22):g.rect(6,14,500,100); g.fill();
+    g.fillStyle="#ffffff"; g.font="600 54px 'IBM Plex Sans', Arial, sans-serif"; g.textAlign="center"; g.textBaseline="middle"; g.fillText(text,256,66);
+    mat=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}); lblCache.set(key,mat); }
+  const sp=new THREE.Sprite(mat); sp.scale.set(w,w/4,1); sp.position.set(x,0.35,z); sp.renderOrder=11; world.add(sp);
+}
+function groundDims(){
+  const all=S.plats.flatMap(p=>geomOf(p).abs), x0=Math.min(...all.map(v=>v[0]))*C, x1=Math.max(...all.map(v=>v[0]))*C, z0=Math.min(...all.map(v=>v[1]))*C, z1=Math.max(...all.map(v=>v[1]))*C;
+  const run=h=>0.26*Math.max(2,Math.ceil(h/0.2));
+  const out=dir=>Math.max(0,...R.stairs.filter(s=>dir==="front"?s.o==="h"&&s.n>0:s.o==="v"&&s.n>0).map(s=>run(s.h)));
+  const W=x1-x0, D=z1-z0, sz=Math.min(2.4,Math.max(1.3,Math.max(W,D)*0.2)), y=0.012, th=0.05;
+  const seg=(ax,az,bx,bz)=>{ const L=Math.hypot(bx-ax,bz-az), m=new THREE.Mesh(new THREE.BoxGeometry(L,0.01,th),dimMat); m.position.set((ax+bx)/2,y,(az+bz)/2); m.rotation.y=-Math.atan2(bz-az,bx-ax); world.add(m); };
+  // ouverture, devant le nez de scène
+  const zf=z1+0.7+out("front"); seg(x0,zf,x1,zf); seg(x0,zf-0.25,x0,zf+0.25); seg(x1,zf-0.25,x1,zf+0.25);
+  seg(x0,z1+0.1,x0,zf+0.25); seg(x1,z1+0.1,x1,zf+0.25);
+  bigLabel(`Ouverture ${fmt(W,W%1?1:0)} m`,(x0+x1)/2,zf+sz*0.2,sz);
+  // profondeur, sur le côté droit (vu du public)
+  const xr=x1+0.7+out("right"); seg(xr,z0,xr,z1); seg(xr-0.25,z0,xr+0.25,z0); seg(xr-0.25,z1,xr+0.25,z1);
+  seg(x1+0.1,z0,xr+0.25,z0); seg(x1+0.1,z1,xr+0.25,z1);
+  bigLabel(`Profondeur ${fmt(D,D%1?1:0)} m`,xr+sz*0.45,(z0+z1)/2,sz);
+}
 function label(text,x,y,z){
   let mat=lblCache.get(text);
   if(!mat){ const c=document.createElement("canvas"); c.width=256; c.height=64; const g=c.getContext("2d");
@@ -1127,6 +1153,7 @@ function rebuild(commit){
     const [x1,z1,x2,z2]=e.o==="d"?[e.x1,e.z1,e.x2,e.z2]:segCells(e);
     const nx=e.o==="d"?e.nx:(e.o==="v"?e.n:0), nz=e.o==="d"?e.nz:(e.o==="h"?e.n:0), len=Math.hypot(x2-x1,z2-z1)*C, hh=Math.max(0.05,e.h-0.1);
     const m=box(len,hh,0.008,M.skirt,(x1+x2)/2*C+nx*0.012,hh/2,(z1+z2)/2*C+nz*0.012); m.rotation.y=-Math.atan2(z2-z1,x2-x1); }
+  if(showDims&&S.plats.length&&(!imgMode||showLbl)) groundDims();
   const tpl={vauban:vaubanParts(),potelet:poteletParts()}; // gabarits partagés par tous les éléments d'un même type
   const vbCloth=S.vbF?new THREE.BoxGeometry(2.2,S.vbH,0.01):null; // coton gratté : un panneau par barrière et par face
   S.bars.forEach((b,bi)=>{ for(const it of barItems(b)){
@@ -1150,7 +1177,7 @@ function fit(view){
   let mnx=0,mnz=0,mxx=6,mxz=3,mh=1;
   if(S.plats.length){ const all=S.plats.flatMap(p=>geomOf(p).abs); mnx=Math.min(...all.map(v=>v[0]))*C; mxx=Math.max(...all.map(v=>v[0]))*C;
     mnz=Math.min(...all.map(v=>v[1]))*C; mxz=Math.max(...all.map(v=>v[1]))*C; mh=Math.max(...S.plats.map(p=>p.h)); }
-  const m=S.stairs.length?1.6:0.6; mnx-=m; mnz-=m; mxx+=m; mxz+=m; // marge pour escaliers et garde-corps
+  const m=(S.stairs.length?1.6:0.6)+(showDims?1.2:0); mnx-=m; mnz-=m; mxx+=m; mxz+=m; // marge pour escaliers et garde-corps
   const cx=(mnx+mxx)/2, cz=(mnz+mxz)/2;
   ctl.target.set(cx,mh*0.4,cz); grid.position.set(Math.round(cx),0.001,Math.round(cz));
   // recul calculé pour que toute l'emprise tienne dans l'écran, en largeur comme en hauteur
@@ -1558,6 +1585,7 @@ document.getElementById("redo").onclick=redo;
 document.getElementById("v3d").onclick=()=>fit("3d");
 document.getElementById("vTop").onclick=()=>fit("top");
 document.getElementById("vLegs").onclick=e=>{showLegs=!showLegs; e.target.textContent=showLegs?"Masquer pieds":"Afficher pieds"; rebuild(false);};
+document.getElementById("vDims").onclick=e=>{showDims=!showDims; e.target.textContent=showDims?"Masquer cotes au sol":"Afficher cotes au sol"; rebuild(false);};
 document.getElementById("vLbl").onclick=e=>{showLbl=!showLbl; e.target.textContent=showLbl?"Masquer étiquettes":"Afficher étiquettes"; rebuild(false);};
 
 let toastT; function toast(msg){ const t=document.getElementById("toast"), h=document.getElementById("hint"); t.textContent=msg; t.hidden=false; h.style.visibility="hidden"; clearTimeout(toastT); toastT=setTimeout(()=>{t.hidden=true; h.style.visibility="";},2600); }

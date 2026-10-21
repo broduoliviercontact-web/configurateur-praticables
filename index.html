@@ -153,6 +153,25 @@ dl.wt dt{color:var(--muted)} dl.wt dd{margin:0}
   .sheet{max-width:none;margin:0;padding:0;box-shadow:none}
   .sheet .cols{break-before:page;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
 }
+/* Devis Impact : feuille blanche, champs clairs quel que soit le thème */
+.sheet input.num,.sheet input.txt,.sheet select{background:#fff;color:#14181c;border-color:#c9ced6}
+.dv-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:4px 0 14px}
+.dv-form label.f{color:#4b5560}
+.dv-wide{grid-column:span 2}
+.dv-print{display:none;margin:0 0 10px;color:#14181c}
+.dv-t td{vertical-align:middle}
+.dv-t td.q{width:auto}
+.dv-t input.num{width:92px;padding:4px 6px;text-align:right}
+.dv-ed{font-size:10px;color:#b07800;border:1px solid #e0c060;border-radius:4px;padding:0 4px;margin-left:4px}
+.dv-tot{display:grid;justify-content:end;gap:4px;margin-top:12px}
+.dv-tot div{display:flex;gap:24px;justify-content:space-between;min-width:260px;color:#4b5560}
+.dv-tot b{color:#14181c;font-family:var(--f-mono);font-weight:500}
+.dv-tot .ttc{border-top:1px solid #14181c;padding-top:4px}
+.dv-tot .ttc span,.dv-tot .ttc b{font-weight:700;color:#14181c}
+.dv-miss{color:#c2412d;margin:6px 0 0;text-align:right}
+.dv-acts{margin-top:12px}
+@media (max-width:760px){ .dv-form{grid-template-columns:1fr 1fr} .dv-t input.num{width:70px} }
+@media print{ .dv-form,.dv-acts{display:none!important} .dv-print{display:block} .dv-t input.num{border:0;padding:0;-moz-appearance:textfield;appearance:textfield;width:70px} .dv-ed{display:none} }
 ol.mont{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:st}
 ol.mont>li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 10px;border:1px solid var(--line);border-radius:8px;padding:9px 10px;counter-increment:st}
 ol.mont>li.done{opacity:.55}
@@ -485,6 +504,7 @@ label.ck.multi-sel{display:none}
       <div class="row" style="margin-top:12px">
         <button class="btn primary" id="copy">Copier la liste</button>
         <button class="btn" id="bPlan">Plan de montage</button>
+        <button class="btn" id="bDevis">Devis Impact Événement</button>
       </div>
       <p class="note" style="margin-top:10px">Règles du prototype : 4 pieds par plateau rectangulaire, 3 par triangle ; 1 jonction par mètre de bord commun entre plateaux de même hauteur ; 2 SGC par garde-corps ; 1 FGARD entre deux garde-corps alignés. Un plateau plus haut que son voisin reçoit un garde-corps sur ce bord. Jupe : sur les bords libres choisis, hors escaliers ; 1 pince tous les 50 cm + 1 par extrémité. Les poids précédés de ≈ sont estimés : seuls PRA-R21, PRI-R21, PRA-C11, PRI-R15, PRA-T21D, PS100, PS120 et GARD1 viennent des fiches revendeur. Les lignes « à compléter » attendent tes références.</p>
     </section>
@@ -515,14 +535,14 @@ label.ck.multi-sel{display:none}
           <dt>Échap</dt><dd>Désélectionner, ou fermer le plan et l'image</dd>
         </dl>
       </details>
-      <p class="note" style="margin-top:10px">Version du 21 octobre 2026</p>
+      <p class="note" style="margin-top:10px">Version du 21 octobre 2026 · devis Impact</p>
     </section>
     </div>
   </aside>
 </div>
 
 <div class="planwrap" id="planModal" hidden>
-  <div class="planbar"><b>Plan de montage</b><span class="sp"></span><button class="btn" id="planDxf">DXF</button><button class="btn" id="planPrint">Imprimer</button><button class="btn primary" id="planClose">Fermer</button></div>
+  <div class="planbar"><b id="planTitle">Plan de montage</b><span class="sp"></span><button class="btn" id="planDxf">DXF</button><button class="btn" id="dvCopy" hidden>Copier la demande</button><button class="btn" id="planPrint">Imprimer</button><button class="btn primary" id="planClose">Fermer</button></div>
   <div class="sheet" id="planSheet"></div>
 </div>
 
@@ -646,7 +666,8 @@ const SITE="https://configurateur-praticables.vercel.app/", SALLE="https://salle
 const fmt=(n,d=2)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:2});
 
 /* ================= État & historique ================= */
-const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null,done:{},moq:"none",moqW:2,jupA:1,jupL:1.3,bars:[],vbF:0,vbA:1,vbH:1.1});
+const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null,done:{},moq:"none",moqW:2,jupA:1,jupL:1.3,bars:[],vbF:0,vbA:1,vbH:1.1,devis:defaultDevis()});
+const defaultDevis=()=>({rem:0,tr:"auto",ov:{},liv:"",rep:"",lieu:"Les Grandes Serres de Pantin"});
 let S=defaultS(), curPid=null, pendingLink=null;
 let firstRun=false, selStair=null;
 let tool="sel", curRef="PRI-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, multi=false;
@@ -705,6 +726,11 @@ function sanitize(d){
   o.name=String(o.name||"").slice(0,80);
   o.done=Object.fromEntries(Object.entries(o.done&&typeof o.done==="object"?o.done:{}).filter(([k,v])=>/^[a-z]{2,12}$/.test(k)&&v===true));
   o.link=o.link&&typeof o.link==="object"?{id:String(o.link.id||"").slice(0,40),kind:String(o.link.kind||"").slice(0,20),name:String(o.link.name||"").slice(0,80)}:null;
+  { const d=o.devis&&typeof o.devis==="object"?o.devis:{}, str=(v,n)=>String(v??"").slice(0,n), ov={};
+    for(const [k,v] of Object.entries(d.ov&&typeof d.ov==="object"?d.ov:{}).slice(0,200)){ if(!/^[\w.-]{1,40}$/.test(k)||!v||typeof v!=="object") continue;
+      const q=+v.q, p=+v.p, e={}; if(v.q!=null&&Number.isFinite(q)&&q>=0&&q<1e5) e.q=q; if(v.p!=null&&Number.isFinite(p)&&p>=0&&p<1e6) e.p=p; if(Object.keys(e).length) ov[k]=e; }
+    o.devis={rem:Math.min(100,Math.max(0,num(d.rem))),tr:["auto","none","12","50"].includes(d.tr)?d.tr:"auto",ov,
+      liv:/^\d{4}-\d{2}-\d{2}$/.test(d.liv)?d.liv:"",rep:/^\d{4}-\d{2}-\d{2}$/.test(d.rep)?d.rep:"",lieu:d.lieu==null?defaultDevis().lieu:str(d.lieu,120)}; }
   return o;
 }
 function load(){
@@ -1872,6 +1898,102 @@ function openPlan(){
 $("vPlan").onclick=openPlan; $("bPlan").onclick=openPlan;
 $("planClose").onclick=()=>{ $("planModal").hidden=true; };
 $("planPrint").onclick=()=>{ try{ window.print(); }catch(e){} };
+
+/* ================= Devis Impact Événement (estimation au tarif relevé sur ses devis) ================= */
+/* Prix HT par événement relevés sur les devis de location Impact Événement des 14 et 20 octobre 2026 (matériel Stage82).
+   Base = devis du 14/10 ; le devis du 20/10 était à −20 % sur chaque ligne. Pieds 0,20 m : 1,40 € remisé, soit 1,75 € de base (déduit).
+   Pieds 1,20 m : 7,50 € (22 jeux étaient aussi facturés 5,25 € sur le même devis). pu:null = prix à demander. */
+const IMPACT={src:"devis Impact Événement des 14 et 20 octobre 2026",tva:0.2,
+  plat:{ref:"311001",nom:"Praticable 2,00 m × 1,00 m revêtement noir Stage82",pu:19.25},
+  pieds:{0.2:1.75,1.0:3.5,1.2:7.5},
+  mach:{ref:"360034",nom:"Mâchoire de connexion pour praticable Stage82",pu:0.875},
+  esc:{1.2:86.625}, // 86,62 € affiché, 173,25 € pour 2 sur le devis
+  ramb:{4:{ref:"35006",nom:"Rambarde fixe 2,00 m Stage82",pu:8.75},2:{ref:"35005",nom:"Rambarde fixe 1,00 m Stage82",pu:8.75}},
+  tr:{"12":[["Livraison 12 m³, 50 km inclus, location groupée charge 1T2",75],["Reprise 12 m³, 50 km inclus, location groupée charge 1T2",75]],
+      "50":[["Livraison / reprise 50 m³, 50 km inclus, charge 9 T",1000]]}};
+const TR_LBL={auto:"Automatique",none:"Aucun",12:"Camion 12 m³ (aller + retour)",50:"Camion 50 m³ 9 T (aller-retour)"};
+/* lignes calculées depuis la scène : {k (clé stable pour les retouches), g (rubrique), ref, nom, q, pu, rem (remise applicable)} */
+function devisLines(){
+  if(!R) R=compute(); const out=[], add=(g,k,ref,nom,q,pu,rem=true)=>{ if(q>0) out.push({g,k,ref,nom,q,pu,rem}); };
+  const per=new Map(); for(const p of S.plats){ const r=REF[p.ref], k=r.shape==="rect"&&r.W*r.D===2?"311001":p.ref; per.set(k,(per.get(k)||0)+1); }
+  for(const [k,n] of per) k==="311001"?add("Structure","plat",IMPACT.plat.ref,IMPACT.plat.nom,n,IMPACT.plat.pu)
+    :add("Structure","plat-"+k,null,`${REF[k].nom} (${k}) : pas de format équivalent sur les devis Impact`,n,null);
+  const ph=new Map(); for(const p of S.plats) ph.set(p.h,(ph.get(p.h)||0)+1);
+  for(const [h,n] of [...ph].sort((a,b)=>a[0]-b[0])) add("Structure","pieds-"+h,null,`Jeu de 4 pieds h ${fmt(h)} m pour praticable`,n,IMPACT.pieds[h]??null);
+  add("Structure","mach",IMPACT.mach.ref,IMPACT.mach.nom,R.shared.size,IMPACT.mach.pu);
+  const eh=new Map(); for(const s of R.stairs) eh.set(s.h,(eh.get(s.h)||0)+1);
+  for(const [h,n] of [...eh].sort((a,b)=>a[0]-b[0])) add("Structure","esc-"+h,null,`Escalier h ${fmt(h)} m modulable Stage82 pour praticable + mains courantes`,n,IMPACT.esc[h]??null);
+  const rb=new Map(); for(const g of R.pieces){ const k=g.diag?"biais":g.L; rb.set(k,(rb.get(k)||0)+1); }
+  for(const L of [4,2]) if(rb.get(L)) add("Structure","ramb-"+L,IMPACT.ramb[L].ref,IMPACT.ramb[L].nom,rb.get(L),IMPACT.ramb[L].pu);
+  add("Structure","ramb-1",null,"Rambarde 0,50 m Stage82",rb.get(1)||0,null);
+  add("Structure","ramb-biais",null,"Rambarde sur mesure (bord biais)",rb.get("biais")||0,null);
+  const tr=devisTransport(); for(const [i,[nom,pu]] of (IMPACT.tr[tr]||[]).entries()) add("Transport",`tr-${tr}-${i}`,null,nom,1,pu,false);
+  for(const l of out){ const o=S.devis.ov[l.k]; l.q0=l.q; l.pu0=l.pu; if(o){ if(o.q!=null) l.q=o.q; if(o.p!=null) l.pu=o.p; } }
+  return out;
+}
+function devisTransport(){ const t=S.devis.tr; return t!=="auto"?t:S.plats.length<=20?"12":"50"; }
+function devisTotals(lines){ const r=1-S.devis.rem/100; let ht=0, miss=0;
+  for(const l of lines){ if(l.pu==null){ miss++; continue; } ht+=l.q*l.pu*(l.rem?r:1); }
+  ht=Math.round(ht*100)/100; const tva=Math.round(ht*IMPACT.tva*100)/100; return {ht,tva,ttc:Math.round((ht+tva)*100)/100,miss}; }
+const eur=v=>v.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
+const pu3=v=>v.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:3});
+let dvLines=[];
+function openDevis(){
+  if(!S.plats.length){ toast("Pose au moins un plateau pour chiffrer la scène"); return; }
+  renderDevis(); $("planTitle").textContent="Devis Impact Événement"; $("planDxf").hidden=true; $("dvCopy").hidden=false;
+  $("planModal").hidden=false; $("planClose").focus();
+}
+function renderDevis(){
+  dvLines=devisLines(); const D=S.devis, {x0,z0,x1,z1}=planData(), hs=[...new Set(S.plats.map(p=>p.h))].sort((a,b)=>a-b), tr=devisTransport();
+  const dt=v=>v?new Date(v+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"à préciser";
+  let g0=null; const rows=dvLines.map((l,i)=>{ const head=l.g!==g0?`<tr class="cat"><td colspan="5">${l.g}</td></tr>`:""; g0=l.g;
+    const edQ=l.q!==l.q0, edP=l.pu!==l.pu0;
+    return head+`<tr><td class="c">${l.ref??""}</td><td>${escH(l.nom)}${edQ||edP?` <span class="dv-ed">retouché</span>`:""}</td>`
+      +`<td class="q"><input class="num dv" data-i="${i}" data-f="q" type="number" inputmode="decimal" min="0" step="1" value="${l.q}" aria-label="Quantité ${escH(l.nom)}"></td>`
+      +`<td class="q"><input class="num dv" data-i="${i}" data-f="p" type="number" inputmode="decimal" min="0" step="0.01" value="${l.pu??""}" placeholder="à demander" aria-label="Prix unitaire ${escH(l.nom)}"></td>`
+      +`<td class="q" id="dvT${i}"></td></tr>`; }).join("");
+  $("planSheet").innerHTML=`<h1>${escH(S.name||"Projet praticables")} · estimation de location</h1>
+    <div class="meta"><span>Estimation du <b>${new Date().toLocaleDateString("fr-FR")}</b></span><span>Scène <b>${fmt((x1-x0)*C,1)} × ${fmt((z1-z0)*C,1)} m</b></span><span>Plancher <b>${hs.map(h=>fmt(h)).join(" / ")} m</b></span><span>Plateaux <b>${S.plats.length}</b></span></div>
+    <div class="dv-form">
+      <label class="f">Livraison <input class="txt" type="date" id="dvLiv" value="${D.liv}"></label>
+      <label class="f">Reprise <input class="txt" type="date" id="dvRep" value="${D.rep}"></label>
+      <label class="f dv-wide">Lieu <input class="txt" type="text" id="dvLieu" maxlength="120" value="${escH(D.lieu)}"></label>
+      <label class="f">Remise sur le matériel (%) <input class="num" type="number" id="dvRem" min="0" max="100" step="1" value="${D.rem}"></label>
+      <label class="f">Transport <select id="dvTr">${Object.entries(TR_LBL).map(([k,v])=>`<option value="${k}" ${k===D.tr?"selected":""}>${v}${k==="auto"?` (${TR_LBL[tr].split(" (")[0]})`:""}</option>`).join("")}</select></label>
+    </div>
+    <p class="dv-print">Livraison : ${dt(D.liv)} · Reprise : ${dt(D.rep)} · ${escH(D.lieu)}</p>
+    <div class="tw"><table class="dv-t"><tr class="hd"><td>Réf.</td><td>Désignation</td><td class="q">Qté</td><td class="q">P.U. net HT</td><td class="q">Total HT</td></tr>${rows}</table></div>
+    <div class="dv-tot" id="dvTot"></div>
+    <div class="row dv-acts"><button class="btn" id="dvReset" type="button">Revenir aux quantités et prix calculés</button></div>
+    <p class="note" style="color:#4b5560;margin-top:10px">Estimation faite avec le configurateur, aux prix relevés sur les ${IMPACT.src} (matériel Stage82, prix par événement). Le devis qui fait foi reste celui d'Impact Événement. Mâchoires : 1 par paire de plateaux voisins à la même hauteur. Rambardes : celles calculées pour les garde-corps de la scène. Jupes, moquette et barrières ne sont pas chiffrées.</p>`;
+  devisTotalsUI();
+}
+function devisTotalsUI(){
+  const r=1-S.devis.rem/100;
+  dvLines.forEach((l,i)=>{ const c=$("dvT"+i); if(c) c.textContent=l.pu==null?"à demander":eur(l.q*l.pu*(l.rem?r:1)); });
+  const T=devisTotals(dvLines);
+  $("dvTot").innerHTML=`${S.devis.rem?`<div><span>Remise matériel</span><b>${fmt(S.devis.rem,0)} %</b></div>`:""}<div><span>Total HT</span><b>${eur(T.ht)}</b></div><div><span>TVA 20 %</span><b>${eur(T.tva)}</b></div><div class="ttc"><span>Total TTC</span><b>${eur(T.ttc)}</b></div>`
+    +(T.miss?`<p class="dv-miss">${T.miss} ligne${T.miss>1?"s":""} sans prix : total hors ${T.miss>1?"ces lignes":"cette ligne"}, à demander à Impact.</p>`:"");
+}
+$("planSheet").addEventListener("input",e=>{ const t=e.target;
+  if(t.classList.contains("dv")){ const l=dvLines[+t.dataset.i]; if(!l) return; const v=t.value===""?null:Math.max(0,+t.value);
+    if(t.dataset.f==="q"){ if(v==null||!Number.isFinite(v)) return; l.q=v; } else { if(v!=null&&!Number.isFinite(v)) return; l.pu=v; }
+    const o={}; if(l.q!==l.q0) o.q=l.q; if(l.pu!==l.pu0&&l.pu!=null) o.p=l.pu; if(Object.keys(o).length) S.devis.ov[l.k]=o; else delete S.devis.ov[l.k];
+    devisTotalsUI(); return; }
+  if(t.id==="dvRem"){ S.devis.rem=Math.min(100,Math.max(0,+t.value||0)); devisTotalsUI(); }
+  if(t.id==="dvLieu") S.devis.lieu=t.value.slice(0,120);
+});
+$("planSheet").addEventListener("change",e=>{ const t=e.target; if(!t.closest(".dv-form,.dv-t")) return;
+  if(t.id==="dvLiv") S.devis.liv=t.value; if(t.id==="dvRep") S.devis.rep=t.value; if(t.id==="dvTr") S.devis.tr=t.value;
+  save(); if(["dvTr","dvLiv","dvRep","dvLieu"].includes(t.id)) renderDevis(); }); // pas de rendu sur les cases du tableau : le focus suit la touche Tab
+$("planSheet").addEventListener("click",e=>{ if(e.target.id!=="dvReset") return; S.devis.ov={}; save(); renderDevis(); toast("Quantités et prix recalculés depuis la scène"); });
+$("dvCopy").onclick=()=>{ const D=S.devis, dt=v=>v?new Date(v+"T12:00").toLocaleDateString("fr-FR"):"à préciser";
+  const txt=`Demande de devis de location — ${S.name||"Projet praticables"}\n\nLivraison : ${dt(D.liv)}\nReprise : ${dt(D.rep)}\nLieu : ${D.lieu}\n\n`
+    +dvLines.map(l=>`${fmt(l.q,l.q%1?1:0)} × ${l.nom}${l.ref?` (réf. ${l.ref})`:""}`).join("\n");
+  navigator.clipboard.writeText(txt).then(()=>toast("Demande copiée, prête à coller dans un e-mail à Impact")).catch(()=>toast("Copie impossible ici")); };
+$("bDevis").onclick=openDevis;
+/* le plan de montage reprend son titre et son bouton DXF */
+$("vPlan").onclick=$("bPlan").onclick=()=>{ $("planTitle").textContent="Plan de montage"; $("planDxf").hidden=false; $("dvCopy").hidden=true; openPlan(); };
 
 /* ================= Exports : DXF et image ================= */
 const fileName=ext=>((S.name||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9._-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60)||"scene-praticables")+ext;

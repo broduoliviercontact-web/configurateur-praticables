@@ -40,7 +40,7 @@ Liste par étapes calculée à partir du projet : préparation, pieds, plateaux 
 
 ## Poids, charge et transport
 
-- Poids unitaire par référence ; poids total dans la nomenclature et sur le plan. Les poids marqués ≈ sont estimés : seuls PRA-R21 (42 kg), PRI-R21 (37 kg), PRA-C11 (24 kg), PRI-R15 (12,8 kg), PRA-T21D (20 kg), PS100 (1,2 kg) et GARD1 (5,48 kg) viennent des fiches revendeur.
+- Poids unitaire par référence ; poids total dans la nomenclature et sur le plan. Les poids marqués ≈ sont estimés : seuls PRA-R21 (42 kg), PRI-R21 (37 kg), PRA-C11 (24 kg), PRI-R15 (12,8 kg), PRA-T21D (20 kg), PS100 (1,2 kg), PS120 (1,4 kg) et GARD1 (5,48 kg) viennent des fiches revendeur.
 - Charge admissible : celle de la référence la plus faible posée (750 kg/m² en PRA, 500 kg/m² en PRI).
 - Transport : nombre de chariots selon le réglage « plateaux 2 × 1 par chariot » (8 par défaut, à ajuster à ton parc).
 
@@ -73,7 +73,8 @@ Outil **Barrières (8)** : au sol, touche un point de départ puis chaque point 
 
 Les références sont en haut du script dans `index.html` : `BRANDS`, `PLATEAUX`, `GC`, `ESCALIERS` et `HEIGHTS`. Pour ajouter un plateau, on ajoute une ligne à `PLATEAUX`.
 
-- ASD : PRA-R21, PRI-R21, PRA-C11, PRI-C11, PRA-R15, PRI-R15, PRA-T21D, PRA-T21G ; pieds PS060 à PS100 ; garde-corps GARD05, GARD1, GARD2 (avec ou sans kit 100) ; SGC, C0014, C0011, FGARD ; escaliers ESC60 à ESC260
+- ASD : PRA-R21, PRI-R21, PRA-C11, PRI-C11, PRA-R15, PRI-R15, PRA-T21D, PRA-T21G ; pieds PS060 à PS120 (PS120 1,4 kg d'après la fiche revendeur, PS110 estimé) ; garde-corps GARD05, GARD1, GARD2 (avec ou sans kit 100) ; SGC, C0014, C0011, FGARD ; escaliers fixes MAR EC 20 et MAR EC 40 (poids inconnus), escaliers réglables ESC60 à ESC260
+- ASD ne fait pas d'escalier réglable entre 1,40 et 2 m : à 1,60 et 1,80 m, la nomenclature sort une ligne « escalier sur mesure » sans référence
 - Prolyte StageDex : Topline 2×1, 2×0,5, triangles G et D ; Basicline noir 2×1. Les pieds et les brides restent à compléter.
 
 ## Règles de calcul (à valider)

@@ -48,6 +48,12 @@ Liste par étapes calculée à partir du projet : préparation, pieds, plateaux 
 
 Réglage « Jupes » : aucune, face public, face et côtés, ou tout le tour. Longueur par hauteur de plancher, hors escaliers, et pinces (1 tous les 50 cm + 1 par extrémité, à valider). Les jupes sont dessinées en 3D et sur le plan.
 
+## Métrages : moquette et coton gratté
+
+- **Coton gratté** (jupe) : réglages « Ampleur de la jupe » (tendue × 1, plissée × 1,5 / × 2 / × 2,5) et « Laize coton gratté » (1,30 m par défaut). Pour chaque hauteur de plancher : si la hauteur + 5 cm de fixation tient dans la laize, le tissu court le long de la scène et le métrage = longueur de jupe × ampleur ; sinon, lés verticaux : nombre de lés = longueur × ampleur / laize, chacun de la hauteur + 5 cm. Arrondi au 0,5 m supérieur, hors ourlets et retours.
+- **Moquette** : « Moquette sur les plateaux » + « Laize moquette » (2 m par défaut). Lés parallèles posés niveau par niveau (un lé ne passe jamais d'une hauteur à l'autre), chaque lé coupé à la longueur des plateaux dans sa bande + 5 cm de coupe ; le site garde le sens (ouverture ou profondeur) qui demande le moins de mètres et affiche la surface des plateaux et le taux de chutes. Arrondi au 0,5 m supérieur. Escaliers non compris.
+- Les deux métrages sont dans la nomenclature (rubriques *Habillage* et *Moquette*), donc dans la liste copiée, le plan de montage et l'envoi vers Salle 3D.
+
 ## Lien avec Salle 3D
 
 - Dans [Salle 3D](https://salle-3d-tools.vercel.app), une scène, une régie ou la scène FIP 360 sélectionnée affiche **« Détailler en praticables ASD ↗ »** : le configurateur s'ouvre avec ses dimensions (P = ouverture, L = profondeur, H = hauteur) et son nom.

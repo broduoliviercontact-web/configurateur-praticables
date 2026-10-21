@@ -424,6 +424,24 @@ label.ck.multi-sel{display:none}
       <label class="f">Laize coton gratté (m)
         <input class="num" id="jupL" type="number" inputmode="decimal" min="0.5" max="4" step="0.05" value="1.3">
       </label>
+      <label class="f">Coton gratté sur les Vauban
+        <select id="vbF">
+          <option value="0">Aucun</option>
+          <option value="1">Une face</option>
+          <option value="2">Deux faces</option>
+        </select>
+      </label>
+      <label class="f">Ampleur sur les Vauban
+        <select id="vbA">
+          <option value="1">Tendue (× 1)</option>
+          <option value="1.5">Plissée (× 1,5)</option>
+          <option value="2">Plissée (× 2)</option>
+          <option value="2.5">Plissée (× 2,5)</option>
+        </select>
+      </label>
+      <label class="f">Hauteur habillée des Vauban (m)
+        <input class="num" id="vbH" type="number" inputmode="decimal" min="0.3" max="1.2" step="0.05" value="1.1">
+      </label>
       <label class="f">Moquette sur les plateaux
         <select id="moqMode">
           <option value="none">Aucune</option>
@@ -620,19 +638,19 @@ const SITE="https://configurateur-praticables.vercel.app/", SALLE="https://salle
 const fmt=(n,d=2)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:2});
 
 /* ================= État & historique ================= */
-const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null,done:{},moq:"none",moqW:2,jupA:1,jupL:1.3,bars:[]});
+const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null,done:{},moq:"none",moqW:2,jupA:1,jupL:1.3,bars:[],vbF:0,vbA:1,vbH:1.1});
 let S=defaultS(), curPid=null, pendingLink=null;
 let firstRun=false, selStair=null;
 let tool="sel", curRef="PRI-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, multi=false;
 let sel=new Set(), hist=[], fut=[];
-const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name,skirt:S.skirt,cart:S.cart,moq:S.moq,moqW:S.moqW,jupA:S.jupA,jupL:S.jupL,bars:S.bars});
+const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name,skirt:S.skirt,cart:S.cart,moq:S.moq,moqW:S.moqW,jupA:S.jupA,jupL:S.jupL,bars:S.bars,vbF:S.vbF,vbA:S.vbA,vbH:S.vbH});
 function restore(js){ Object.assign(S,JSON.parse(js)); sel=new Set([...sel].filter(id=>S.plats.some(p=>p.id===id))); syncInputs(); }
 function syncInputs(){
   const hs=document.getElementById("height"), gm=document.getElementById("gcMode");
   if(hs) hs.value=String(S.H); if(gm) gm.value=S.gc;
   const sk=document.getElementById("skirtMode"), ct=document.getElementById("cartCap"), pn2=document.getElementById("pName");
   if(sk) sk.value=S.skirt; if(ct) ct.value=S.cart;
-  for(const [id,v] of [["moqMode",S.moq],["moqW",S.moqW],["jupA",S.jupA],["jupL",S.jupL]]){ const el=document.getElementById(id); if(el&&document.activeElement!==el) el.value=v; } if(pn2&&document.activeElement!==pn2) pn2.value=S.name||"";
+  for(const [id,v] of [["moqMode",S.moq],["moqW",S.moqW],["jupA",S.jupA],["jupL",S.jupL],["vbF",S.vbF],["vbA",S.vbA],["vbH",S.vbH]]){ const el=document.getElementById(id); if(el&&document.activeElement!==el) el.value=v; } if(pn2&&document.activeElement!==pn2) pn2.value=S.name||"";
   const pn=document.getElementById("projName"); if(pn) pn.textContent=S.name||"Préparation de montage";
 }
 function pushHist(pre){ hist.push(pre??snap()); if(hist.length>150) hist.shift(); fut=[]; }
@@ -670,6 +688,7 @@ function sanitize(d){
   o.H=HEIGHTS.includes(+o.H)?+o.H:1.0; o.gc=["kit","sep","none"].includes(o.gc)?o.gc:"kit";
   o.skirt=["none","front","visible","all"].includes(o.skirt)?o.skirt:"front"; o.cart=Math.min(40,Math.max(1,Math.round(num(o.cart))||8));
   o.moq=o.moq==="on"?"on":"none"; o.moqW=Math.min(6,Math.max(0.5,num(o.moqW)||2)); o.jupA=[1,1.5,2,2.5].includes(+o.jupA)?+o.jupA:1; o.jupL=Math.min(4,Math.max(0.5,num(o.jupL)||1.3));
+  o.vbF=[0,1,2].includes(+o.vbF)?+o.vbF:0; o.vbA=[1,1.5,2,2.5].includes(+o.vbA)?+o.vbA:1; o.vbH=Math.min(1.2,Math.max(0.3,num(o.vbH)||1.1));
   o.bars=(Array.isArray(o.bars)?o.bars:[]).slice(0,100).filter(b=>b&&["vauban","potelet"].includes(b.k)&&Array.isArray(b.pts)).map(b=>({k:b.k,pts:b.pts.slice(0,200).filter(q=>Array.isArray(q)&&q.length===2&&q.every(v=>Number.isFinite(+v)&&Math.abs(+v)<500)).map(q=>[+q[0],+q[1]])})).filter(b=>b.pts.length>=2);
   o.name=String(o.name||"").slice(0,80);
   o.done=Object.fromEntries(Object.entries(o.done&&typeof o.done==="object"?o.done:{}).filter(([k,v])=>/^[a-z]{2,12}$/.test(k)&&v===true));
@@ -808,6 +827,13 @@ function carpetPlan(W=S.moqW){
 }
 /* coton gratté de la jupe : laize L ; si la hauteur (+ 5 cm de fixation) tient dans la laize, le tissu court le long de la scène :
    mètres = longueur de jupe × ampleur ; sinon lés verticaux : nombre de lés = longueur × ampleur / L, chacun de hauteur + 5 cm */
+/* coton gratté autour des Vauban : longueur des lignes × faces habillées, hauteur habillée depuis le sol (1,10 m = barrière entière),
+   même règle de laize que la jupe ; fixations : colliers, ≈ 4 par barrière et par face (haut et bas aux 2 montants) — à valider */
+function vaubanCotton(){ if(!S.vbF) return null; let len=0, n=0;
+  for(const b of S.bars) if(b.k==="vauban"){ for(let i=1;i<b.pts.length;i++){ const L=Math.hypot(b.pts[i][0]-b.pts[i-1][0],b.pts[i][1]-b.pts[i-1][1]); len+=Math.max(1,Math.round(L/VAUBAN_PITCH))*VAUBAN_PITCH; } }
+  for(const b of S.bars) if(b.k==="vauban") n+=barItems(b).filter(i=>i.t==="vauban").length;
+  if(!len) return null; const c=cottonFor(S.vbH,len*S.vbF,S.vbA);
+  return {...c,len,faces:S.vbF,colliers:n*4*S.vbF}; }
 function cottonFor(h,len,A=S.jupA,L=S.jupL){
   const run=len*A; if(h+0.05<=L+1e-9) return {m:Math.ceil(run*2-1e-9)/2,lay:"en long"};
   const n=Math.ceil(run/L-1e-9); return {m:Math.ceil(n*(h+0.05)*2-1e-9)/2,lay:`${n} lés verticaux`};
@@ -855,7 +881,10 @@ function bom(R){
   if(bc.vauban||bc.potelet){ rows.push(["Barrières et potelets"]);
     if(bc.vauban) row(null,"Barrière Vauban à pieds fixes 2,20 m (HERMEQ MB0033)",bc.vauban,16,true);
     if(bc.potelet) row("REXO100CHC","Potelet à corde inox chromé (VISO)",bc.potelet,6.75);
-    if(bc.cordon) row("CI2C","Cordon chanvre torsadé Ø 28 mm, 2 m (VISO)",bc.cordon,0.95); }
+    if(bc.cordon) row("CI2C","Cordon chanvre torsadé Ø 28 mm, 2 m (VISO)",bc.cordon,0.95);
+    const vc=vaubanCotton(); if(vc){ const amp=S.vbA===1?"tendu":`plissé × ${fmt(S.vbA,1)}`;
+      row(null,`Coton gratté laize ${fmt(S.jupL,2)} m sur Vauban : ${fmt(vc.len,1)} m de barrières × ${vc.faces} face${vc.faces>1?"s":""}, h ${fmt(S.vbH)} m (${amp}, ${vc.lay}, hors ourlets)`,vc.m,0,false,"m");
+      row(null,"Collier de serrage pour le coton (≈ 4 par barrière et par face)",vc.colliers,0.005,true); } }
   if(S.moq==="on"&&S.plats.length){ const k=carpetPlan(); rows.push(["Moquette"]);
     row(null,`Moquette laize ${fmt(k.W,2)} m : ${k.n} lé${k.n>1?"s":""} dans le sens de l'${k.sens} (${fmt(k.area,1)} m² de plateaux, chutes ${Math.round(k.waste*100)} %)`,k.m,0,false,"m"); }
   return rows;
@@ -984,7 +1013,9 @@ function rebuild(commit){
     const nx=e.o==="d"?e.nx:(e.o==="v"?e.n:0), nz=e.o==="d"?e.nz:(e.o==="h"?e.n:0), len=Math.hypot(x2-x1,z2-z1)*C, hh=Math.max(0.05,e.h-0.1);
     const m=box(len,hh,0.008,M.skirt,(x1+x2)/2*C+nx*0.012,hh/2,(z1+z2)/2*C+nz*0.012); m.rotation.y=-Math.atan2(z2-z1,x2-x1); }
   const tpl={vauban:vaubanParts(),potelet:poteletParts()}; // gabarits partagés par tous les éléments d'un même type
-  S.bars.forEach((b,bi)=>{ for(const it of barItems(b)){ const parts=it.t==="cordon"?cordonParts(it.L):tpl[it.t], mtx=new THREE.Matrix4().compose(new THREE.Vector3(it.x,0,it.z),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),it.a),new THREE.Vector3(1,1,1));
+  const vbCloth=S.vbF?new THREE.BoxGeometry(2.2,S.vbH,0.01):null; // coton gratté : un panneau par barrière et par face
+  S.bars.forEach((b,bi)=>{ for(const it of barItems(b)){
+    if(vbCloth&&it.t==="vauban") for(const side of S.vbF===2?[-1,1]:[1]){ const m=new THREE.Mesh(vbCloth,M.skirt); m.position.set(it.x+Math.sin(it.a)*0.035*side,S.vbH/2,it.z+Math.cos(it.a)*0.035*side); m.rotation.y=it.a; m.userData.bar=bi; world.add(m); } const parts=it.t==="cordon"?cordonParts(it.L):tpl[it.t], mtx=new THREE.Matrix4().compose(new THREE.Vector3(it.x,0,it.z),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),it.a),new THREE.Vector3(1,1,1));
     for(const q of parts){ const m=new THREE.Mesh(q.geometry,q.material); m.applyMatrix4(new THREE.Matrix4().multiplyMatrices(mtx,q.matrix.compose(q.position,q.quaternion,q.scale))); m.userData.bar=bi; world.add(m); } } });
   renderBom(R); updateSelPanel(); updateHud(); if(typeof renderMontage==="function"&&$) renderMontage();
   if(commit) save();
@@ -1650,6 +1681,9 @@ $("pName").addEventListener("change",()=>save());
 $("skirtMode").onchange=e=>act(()=>{ S.skirt=e.target.value; });
 $("jupA").onchange=e=>act(()=>{ S.jupA=+e.target.value; });
 $("jupL").onchange=e=>act(()=>{ S.jupL=Math.min(4,Math.max(0.5,+e.target.value||1.3)); });
+$("vbF").onchange=e=>act(()=>{ S.vbF=+e.target.value; });
+$("vbA").onchange=e=>act(()=>{ S.vbA=+e.target.value; });
+$("vbH").onchange=e=>act(()=>{ S.vbH=Math.min(1.2,Math.max(0.3,+e.target.value||1.1)); });
 $("moqMode").onchange=e=>act(()=>{ S.moq=e.target.value; });
 $("moqW").onchange=e=>act(()=>{ S.moqW=Math.min(6,Math.max(0.5,+e.target.value||2)); });
 $("cartCap").onchange=e=>act(()=>{ S.cart=Math.min(40,Math.max(1,Math.round(+e.target.value)||8)); });

@@ -486,7 +486,7 @@ label.ck.multi-sel{display:none}
         <button class="btn primary" id="copy">Copier la liste</button>
         <button class="btn" id="bPlan">Plan de montage</button>
       </div>
-      <p class="note" style="margin-top:10px">Règles du prototype : 4 pieds par plateau rectangulaire, 3 par triangle ; 1 jonction par mètre de bord commun entre plateaux de même hauteur ; 2 SGC par garde-corps ; 1 FGARD entre deux garde-corps alignés. Un plateau plus haut que son voisin reçoit un garde-corps sur ce bord. Jupe : sur les bords libres choisis, hors escaliers ; 1 pince tous les 50 cm + 1 par extrémité. Les poids précédés de ≈ sont estimés : seuls PRA-R21, PRI-R21, PRA-C11, PRI-R15, PRA-T21D, PS100 et GARD1 viennent des fiches revendeur. Les lignes « à compléter » attendent tes références.</p>
+      <p class="note" style="margin-top:10px">Règles du prototype : 4 pieds par plateau rectangulaire, 3 par triangle ; 1 jonction par mètre de bord commun entre plateaux de même hauteur ; 2 SGC par garde-corps ; 1 FGARD entre deux garde-corps alignés. Un plateau plus haut que son voisin reçoit un garde-corps sur ce bord. Jupe : sur les bords libres choisis, hors escaliers ; 1 pince tous les 50 cm + 1 par extrémité. Les poids précédés de ≈ sont estimés : seuls PRA-R21, PRI-R21, PRA-C11, PRI-R15, PRA-T21D, PS100, PS120 et GARD1 viennent des fiches revendeur. Les lignes « à compléter » attendent tes références.</p>
     </section>
 
     <section id="montSec">
@@ -505,16 +505,17 @@ label.ck.multi-sel{display:none}
       <details style="margin-top:12px">
         <summary>Raccourcis clavier</summary>
         <dl>
-          <dt>1 à 7</dt><dd>Changer d'outil (7 = tracé)</dd>
+          <dt>1 à 8</dt><dd>Changer d'outil (7 = tracé, 8 = barrières)</dd>
           <dt>R</dt><dd>Pivoter la sélection ou le plateau à poser</dd>
           <dt>Flèches</dt><dd>Déplacer la sélection de 50 cm</dd>
           <dt>Suppr</dt><dd>Supprimer la sélection</dd>
           <dt>Ctrl+D</dt><dd>Dupliquer</dd>
           <dt>Ctrl+A</dt><dd>Tout sélectionner</dd>
           <dt>Ctrl+Z</dt><dd>Annuler · Ctrl+Maj+Z rétablir</dd>
-          <dt>Échap</dt><dd>Désélectionner</dd>
+          <dt>Échap</dt><dd>Désélectionner, ou fermer le plan et l'image</dd>
         </dl>
       </details>
+      <p class="note" style="margin-top:10px">Version du 21 octobre 2026</p>
     </section>
     </div>
   </aside>
@@ -600,11 +601,13 @@ label.ck.multi-sel{display:none}
 <script>
 /* ================= Catalogue (modifiable) ================= */
 const C = 0.5; // pas de la grille en mètres
+const POS_MAX = 400; // positions importées bornées à ±400 cases (±200 m)
 const HEIGHTS = [0.2, 0.4, 0.6, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4, 1.6, 1.8, 2.0];
 /* kg : poids unitaire ; est : poids estimé (pas trouvé sur la fiche revendeur) ; chg : charge admissible kg/m² */
 const BRANDS = {
   ASD: { nom:"ASD",
-    pieds:{0.6:["PS060","Pied fixe alu 50×3×575",0.7,true],0.8:["PS080","Pied fixe alu 50×3×775",0.95,true],0.9:["PS090","Pied fixe alu 50×3×875",1.07,true],1.0:["PS100","Pied fixe alu 50×3×975",1.2,false]},
+    pieds:{0.6:["PS060","Pied fixe alu 50×3×575",0.7,true],0.8:["PS080","Pied fixe alu 50×3×775",0.95,true],0.9:["PS090","Pied fixe alu 50×3×875",1.07,true],1.0:["PS100","Pied fixe alu 50×3×975",1.2,false],
+      1.1:["PS110","Pied fixe alu 50×3×1075",1.3,true],1.2:["PS120","Pied fixe alu 50×3×1175",1.4,false]},
     jonction:["C0011","Jonction bridage 2 praticables",0.3,true] },
   SDX: { nom:"Prolyte StageDex", pieds:{}, jonction:[null,"Bride de liaison StageDex",0.3,true] }
 };
@@ -627,12 +630,17 @@ PLATEAUX.forEach(r=>r.charge=r.chg?`${r.chg} kg/m²${r.estC?" (estimé)":""}`:""
 const REF = Object.fromEntries(PLATEAUX.map(p=>[p.ref,p]));
 const GC = {4:{sep:"GARD2",kit:"GARD2 100",nom:"Garde-corps 2 × 1 m",kg:10.5,est:true},2:{sep:"GARD1",kit:"GARD1 100",nom:"Garde-corps 1 × 1 m",kg:5.48},1:{sep:"GARD05",kit:"GARD05",nom:"Garde-corps 0,5 × 1 m",kg:3,est:true}};
 const ACC = {"SGC":1.2,"SGC 100":1.3,"C0014":0.05,"FGARD":0.4}; // kg estimés
+/* kg:null = poids inconnu (ligne « hors poids ») ; ASD ne fait pas d'escalier réglable entre 1,40 et 2 m (voir ESC_TROU) */
 const ESCALIERS = [
+  {ref:"MAR EC 20",nom:"Escalier fixe alu 0,20 m",min:0.2,max:0.2,kg:null},
+  {ref:"MAR EC 40",nom:"Escalier fixe alu 0,40 m",min:0.4,max:0.4,kg:null},
   {ref:"ESC60",nom:"Escalier réglable 0,6–0,8 m + GC",min:0.6,max:0.8,kg:25},
   {ref:"ESC100",nom:"Escalier réglable 0,8–1 m + GC",min:0.8,max:1.0,kg:35},
   {ref:"ESC150",nom:"Escalier réglable 1–1,4 m + GC",min:1.0,max:1.4,kg:50},
   {ref:"ESC260",nom:"Escalier réglable 2–2,6 m + GC",min:2.0,max:2.6,kg:90}
 ];
+const escFor=h=>ESCALIERS.find(e=>h>=e.min-1e-9&&h<=e.max+1e-9)||null;
+const ESC_TROU=h=>h>1.4&&h<2.0?"aucun escalier ASD entre 1,40 et 2 m : sur mesure ou autre marque":"aucune référence à cette hauteur";
 const JUPE_KGM=h=>0.35*h+0.15; // jupe velours + bande : kg par mètre, estimé
 const SITE="https://configurateur-praticables.vercel.app/", SALLE="https://salle-3d-tools.vercel.app/";
 const fmt=(n,d=2)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:2});
@@ -681,15 +689,19 @@ function save(){
 /* nettoie des données venues d'un fichier ou d'un lien */
 function sanitize(d){
   const o=Object.assign(defaultS(),d&&typeof d==="object"?d:{}), num=v=>Number.isFinite(+v)?+v:0;
-  o.plats=(Array.isArray(o.plats)?o.plats:[]).filter(p=>p&&REF[p.ref]).map((p,i)=>({id:Number.isFinite(+p.id)?+p.id:i+1,ref:p.ref,x:Math.round(num(p.x)),z:Math.round(num(p.z)),rot:((Math.round(num(p.rot))%4)+4)%4,h:HEIGHTS.includes(+p.h)?+p.h:1.0}));
-  o.nid=Math.max(o.plats.reduce((m,p)=>Math.max(m,p.id),0)+1,num(o.nid));
+  // positions bornées à ±200 m (un plateau très loin bloquerait le plan 2D), 2 000 plateaux au plus, identifiants uniques
+  const inB=v=>Math.abs(num(v))<=POS_MAX;
+  o.plats=(Array.isArray(o.plats)?o.plats:[]).filter(p=>p&&REF[p.ref]&&inB(p.x)&&inB(p.z)).slice(0,2000).map((p,i)=>({id:Number.isInteger(+p.id)&&+p.id>0?+p.id:0,ref:p.ref,x:Math.round(num(p.x)),z:Math.round(num(p.z)),rot:((Math.round(num(p.rot))%4)+4)%4,h:HEIGHTS.includes(+p.h)?+p.h:1.0}));
+  { const seen=new Set(); let next=o.plats.reduce((m,p)=>Math.max(m,p.id),0)+1;
+    for(const p of o.plats){ if(!p.id||seen.has(p.id)) p.id=next++; seen.add(p.id); } }
+  o.nid=Math.max(o.plats.reduce((m,p)=>Math.max(m,p.id),0)+1,Math.min(1e9,num(o.nid)));
   o.open=(Array.isArray(o.open)?o.open:[]).filter(k=>typeof k==="string"&&/^[hvd]:[-\d]+:[-\d]+$/.test(k));
-  o.stairs=(Array.isArray(o.stairs)?o.stairs:[]).filter(t=>t&&(t.o==="h"||t.o==="v")&&[t.line,t.a,t.n].every(v=>Number.isFinite(+v))).map(t=>({o:t.o,line:+t.line,a:+t.a,n:+t.n>0?1:-1}));
+  o.stairs=(Array.isArray(o.stairs)?o.stairs:[]).filter(t=>t&&(t.o==="h"||t.o==="v")&&[t.line,t.a,t.n].every(v=>Number.isFinite(+v))&&inB(t.line)&&inB(t.a)).slice(0,200).map(t=>({o:t.o,line:+t.line,a:+t.a,n:+t.n>0?1:-1}));
   o.H=HEIGHTS.includes(+o.H)?+o.H:1.0; o.gc=["kit","sep","none"].includes(o.gc)?o.gc:"kit";
   o.skirt=["none","front","visible","all"].includes(o.skirt)?o.skirt:"front"; o.cart=Math.min(40,Math.max(1,Math.round(num(o.cart))||8));
   o.moq=o.moq==="on"?"on":"none"; o.moqW=Math.min(6,Math.max(0.5,num(o.moqW)||2)); o.jupA=[1,1.5,2,2.5].includes(+o.jupA)?+o.jupA:1; o.jupL=Math.min(4,Math.max(0.5,num(o.jupL)||1.3));
   o.vbF=[0,1,2].includes(+o.vbF)?+o.vbF:0; o.vbA=[1,1.5,2,2.5].includes(+o.vbA)?+o.vbA:1; o.vbH=Math.min(1.2,Math.max(0.3,num(o.vbH)||1.1));
-  o.bars=(Array.isArray(o.bars)?o.bars:[]).slice(0,100).filter(b=>b&&["vauban","potelet"].includes(b.k)&&Array.isArray(b.pts)).map(b=>({k:b.k,pts:b.pts.slice(0,200).filter(q=>Array.isArray(q)&&q.length===2&&q.every(v=>Number.isFinite(+v)&&Math.abs(+v)<500)).map(q=>[+q[0],+q[1]])})).filter(b=>b.pts.length>=2);
+  o.bars=(Array.isArray(o.bars)?o.bars:[]).slice(0,100).filter(b=>b&&["vauban","potelet"].includes(b.k)&&Array.isArray(b.pts)).map(b=>({k:b.k,pts:b.pts.slice(0,200).filter(q=>Array.isArray(q)&&q.length===2&&q.every(v=>Number.isFinite(+v)&&Math.abs(+v)<=POS_MAX*C)).map(q=>[+q[0],+q[1]])})).filter(b=>b.pts.length>=2);
   o.name=String(o.name||"").slice(0,80);
   o.done=Object.fromEntries(Object.entries(o.done&&typeof o.done==="object"?o.done:{}).filter(([k,v])=>/^[a-z]{2,12}$/.test(k)&&v===true));
   o.link=o.link&&typeof o.link==="object"?{id:String(o.link.id||"").slice(0,40),kind:String(o.link.kind||"").slice(0,20),name:String(o.link.name||"").slice(0,80)}:null;
@@ -869,8 +881,8 @@ function bom(R){
     for(const [b,n] of jm){ const j=BRANDS[b].jonction; row(j[0],j[1],n,j[2],j[3]); }
     if(R.fgard) row("FGARD","Raccord 2 tubes garde-corps",R.fgard,ACC.FGARD,true); }
   if(R.stairs.length){ rows.push(["Escaliers"]); const em=new Map();
-    for(const s of R.stairs){ const e=ESCALIERS.find(e=>s.h>=e.min&&s.h<=e.max); inc(em,e?e.ref:`?${s.h}`); }
-    for(const [k,n] of em){ const e=ESCALIERS.find(e=>e.ref===k); e?row(e.ref,e.nom,n,e.kg,true):row(null,`Escalier pour ${fmt(+k.slice(1))} m`,n,null); } }
+    for(const s of R.stairs){ const e=escFor(s.h); inc(em,e?e.ref:`?${s.h}`); }
+    for(const [k,n] of em){ const e=ESCALIERS.find(e=>e.ref===k); e?row(e.ref,e.nom,n,e.kg,true):row(null,`Escalier pour ${fmt(+k.slice(1))} m (${ESC_TROU(+k.slice(1))})`,n,null); } }
   const sk=skirtInfo(R);
   if(sk.len){ rows.push(["Habillage"]);
     for(const [h,len] of [...sk.byH].sort((a,b)=>a[0]-b[0])){ const m=Math.ceil(len*2-1e-9)/2; row(null,`Jupe de scène, hauteur ${fmt(h)} m`,m,+JUPE_KGM(h).toFixed(2),true,"m"); }
@@ -974,7 +986,9 @@ function label(text,x,y,z){
 let R=null, dragBad=false;
 function rebuild(commit){
   R=compute();
-  if(commit){ S.stairs=R.stairs.map(({h,...s})=>s); S.open=R.open; }
+  if(commit){ const lost=S.stairs.length-R.stairs.length; // un escalier dont le bord n'est plus libre disparaît : on le dit
+    S.stairs=R.stairs.map(({h,...s})=>s); S.open=R.open;
+    if(lost>0) setTimeout(()=>toast(`${lost>1?lost+" escaliers retirés":"Escalier retiré"} : son bord n'est plus libre · Ctrl+Z pour revenir`)); }
   while(world.children.length){ const c=world.children.pop(); if(!c.isSprite) c.geometry.dispose(); }
   const T=0.1;
   for(const {p,g} of R.L){
@@ -1390,10 +1404,10 @@ function updateStairPanel(){
   if(selStair&&i<0) selStair=null;
   panel.hidden=!selStair; if(!selStair) return;
   const s=S.stairs[i], rs=R.stairs.find(o=>ekey(o.o,o.line,o.a)===selStair), h=rs?rs.h:S.H;
-  const e=ESCALIERS.find(e=>h>=e.min&&h<=e.max);
+  const e=escFor(h);
   const side=s.o==="h"?(s.n>0?"Bord avant (public)":"Bord arrière"):(s.n<0?"Bord gauche":"Bord droit");
   document.getElementById("stTitle").textContent=e?e.ref:"";
-  document.getElementById("stInfo").textContent=`${side} · plancher à ${fmt(h)} m · 1 m de large${e?"":" · aucune référence pour cette hauteur"}`;
+  document.getElementById("stInfo").textContent=`${side} · plancher à ${fmt(h)} m · 1 m de large${e?"":" · "+ESC_TROU(h)}`;
   document.getElementById("stPrev").textContent=s.o==="h"?"◀ 50 cm":"▲ 50 cm";
   document.getElementById("stNext").textContent=s.o==="h"?"50 cm ▶":"50 cm ▼";
 }
@@ -1466,6 +1480,8 @@ bindReset();
 
 document.addEventListener("keydown",e=>{
   if(!npModal.hidden){ if(e.key==="Escape") closeNP(); return; }
+  // plan de montage ou image client ouverts : la scène derrière ne reçoit aucun raccourci ; Échap ferme la fenêtre
+  if(!$("planModal").hidden||!$("imgModal").hidden){ if(e.key==="Escape"){ e.preventDefault(); closeOverlays(); } return; }
   const k=(e.key||"").toLowerCase(), mod=e.ctrlKey||e.metaKey;
   if(e.target.closest('textarea,input[type="text"],input[type="number"]')) return;
   if(e.target.closest("select,input")&&!(mod&&(k==="z"||k==="y"))) return;
@@ -1751,7 +1767,7 @@ function montageSteps(){
       R.open.length?`Laisser sans garde-corps : ${[...new Set(R.open.map(k=>R.ex.get(k)).filter(Boolean).map(sideOf))].join(", ")}`:""]);
   }
   if(R.stairs.length){
-    add("esc",`Escaliers (${R.stairs.length})`,[...R.stairs.map(s=>{ const e=ESCALIERS.find(e=>s.h>=e.min&&s.h<=e.max), [a,b,c,d]=segCells(s,2);
+    add("esc",`Escaliers (${R.stairs.length})`,[...R.stairs.map(s=>{ const e=escFor(s.h), [a,b,c,d]=segCells(s,2);
       const pos=s.o==="h"?`à ${fmt((a-x0)*C,1)} m du bord gauche`:`à ${fmt((b-z0)*C,1)} m du bord arrière`;
       return `${e?e.ref:"Escalier à compléter"} sur le bord ${sideOf(s)}, ${pos} · régler à ${fmt(s.h)} m, fixer au plateau, poser sa main courante`; })]);
   }
@@ -1784,7 +1800,7 @@ function planData(){
 function planSvgStr(){
   const {L,x0,z0,x1,z1}=planData(), X=v=>(v-x0)*C, Z=v=>(v-z0)*C, W=(x1-x0)*C, D=(z1-z0)*C, f=v=>+v.toFixed(3);
   const st=R.stairs.map(s=>{ const [a,b,c,d]=segCells(s,2), n=Math.max(2,Math.ceil(s.h/0.2)), run=0.26*n, nx=s.o==="v"?s.n:0, nz=s.o==="h"?s.n:0;
-    const e=ESCALIERS.find(e=>s.h>=e.min&&s.h<=e.max); return {a:X(a),b:Z(b),c:X(c),d:Z(d),nx,nz,run,n,ref:e?e.ref:"Escalier"}; });
+    const e=escFor(s.h); return {a:X(a),b:Z(b),c:X(c),d:Z(d),nx,nz,run,n,ref:e?e.ref:"Escalier"}; });
   let mnx=0,mnz=0,mxx=W,mxz=D; for(const b of S.bars) for(const [x,z] of b.pts){ const px=x-x0*C, pz=z-z0*C; mnx=Math.min(mnx,px-0.3); mxx=Math.max(mxx,px+0.3); mnz=Math.min(mnz,pz-0.3); mxz=Math.max(mxz,pz+0.3); }
   for(const t of st){ for(const [x,z] of [[t.a,t.b],[t.c,t.d],[t.a+t.nx*t.run,t.b+t.nz*t.run],[t.c+t.nx*t.run,t.d+t.nz*t.run]]){ mnx=Math.min(mnx,x); mxx=Math.max(mxx,x); mnz=Math.min(mnz,z); mxz=Math.max(mxz,z); } }
   const padL=1.6, padT=1.5, padR=0.7, padB=1.4, vx=mnx-padL, vz=mnz-padT, vw=mxx-mnx+padL+padR, vh=mxz-mnz+padT+padB;
@@ -1881,7 +1897,7 @@ function buildDxf(){
   for(const k of R.open){ const e=R.ex.get(k); if(!e) continue; const [a,b,c,d]=e.o==="d"?[e.x1,e.z1,e.x2,e.z2]:segCells(e); line("ASD_BORD_OUVERT",X(a),Y(b),X(c),Y(d)); }
   for(const e of skirtEdges(R)){ const [a,b,c,d]=e.o==="d"?[e.x1,e.z1,e.x2,e.z2]:segCells(e), nx=e.o==="d"?e.nx:(e.o==="v"?e.n:0), nz=e.o==="d"?e.nz:(e.o==="h"?e.n:0);
     line("ASD_JUPES",X(a)+nx*0.03,Y(b)-nz*0.03,X(c)+nx*0.03,Y(d)-nz*0.03); }
-  for(const s of R.stairs){ const [a,b,c,d]=segCells(s,2), k=Math.max(2,Math.ceil(s.h/0.2)), run=0.26*k, nx=s.o==="v"?s.n:0, nz=s.o==="h"?s.n:0, e=ESCALIERS.find(e=>s.h>=e.min&&s.h<=e.max);
+  for(const s of R.stairs){ const [a,b,c,d]=segCells(s,2), k=Math.max(2,Math.ceil(s.h/0.2)), run=0.26*k, nx=s.o==="v"?s.n:0, nz=s.o==="h"?s.n:0, e=escFor(s.h);
     const P=[[X(a),Y(b)],[X(c),Y(d)],[X(c)+nx*run,Y(d)-nz*run],[X(a)+nx*run,Y(b)-nz*run]]; poly("ASD_ESCALIERS",P);
     for(let i=1;i<k;i++){ const t=run*i/k; line("ASD_ESCALIERS",X(a)+nx*t,Y(b)-nz*t,X(c)+nx*t,Y(d)-nz*t); }
     text("ASD_ESCALIERS",(P[0][0]+P[2][0])/2,(P[0][1]+P[2][1])/2,0.14,e?e.ref:"Escalier"); }
@@ -1935,6 +1951,7 @@ function openImg(){ if(!S.plats.length){ toast("Pose au moins un plateau"); retu
 $("vImg").onclick=openImg;
 ["imgLbl","imgGrid","imgBand"].forEach(id=>$(id).onchange=renderImage);
 $("imgClose").onclick=()=>{ $("imgModal").hidden=true; };
+function closeOverlays(){ if(!$("imgModal").hidden) $("imgModal").hidden=true; else $("planModal").hidden=true; }
 $("imgModal").addEventListener("pointerdown",e=>{ if(e.target===$("imgModal")) $("imgModal").hidden=true; });
 $("imgSave").onclick=()=>{ if(imgBlob){ download(imgBlob,fileName(".png")); toast("Image téléchargée"); } };
 
@@ -1946,7 +1963,7 @@ function stagePayload(){
   return {v:1,type:"asd-stage",id:S.link?.id||null,name:S.name||"Scène ASD",W:+((x1-x0)*C).toFixed(3),D:+((z1-z0)*C).toFixed(3),H:Math.max(...S.plats.map(p=>p.h)),
     plats:R.L.map(({p,g})=>({ref:p.ref,h:p.h,p:g.abs.map(([x,z])=>[X(x),Z(z)])})),
     gc:R.pieces.map(g=>{ const [a,b,c,d]=g.diag?[g.x1,g.z1,g.x2,g.z2]:segCells(g,g.L); return [X(a),Z(b),X(c),Z(d),g.h,...nrm(g)]; }),
-    stairs:R.stairs.map(s=>{ const [a,b,c,d]=segCells(s,2), e=ESCALIERS.find(e=>s.h>=e.min&&s.h<=e.max); return [X(a),Z(b),X(c),Z(d),s.o==="v"?s.n:0,s.o==="h"?s.n:0,s.h,e?e.ref:""]; }),
+    stairs:R.stairs.map(s=>{ const [a,b,c,d]=segCells(s,2), e=escFor(s.h); return [X(a),Z(b),X(c),Z(d),s.o==="v"?s.n:0,s.o==="h"?s.n:0,s.h,e?e.ref:""]; }),
     skirts:skirtEdges(R).map(e=>{ const [a,b,c,d]=e.o==="d"?[e.x1,e.z1,e.x2,e.z2]:segCells(e); return [X(a),Z(b),X(c),Z(d),e.h]; }),
     bom:lastBom.filter(r=>r.length>1).map(r=>[r[0]||"",r[1],r[2],r[3]==null?0:+r[3],r[5]||""]),
     kg:Math.round(T.kg), surf:+T.surf.toFixed(2), charge:T.weakest.chg, chargeRef:T.weakest.ref, carts:T.carts,
@@ -1986,6 +2003,9 @@ addEventListener("hashchange",handleHash);
 load(); syncInputs(); drawRefs(); setTool("sel"); readTheme(); resize(); rebuild(true); setSheet(false); renderProjects();
 requestAnimationFrame(()=>requestAnimationFrame(()=>{ resize(); fit(); }));
 handleHash();
+/* étiquettes 3D : redessinées une fois la police IBM Plex Mono chargée (sinon elles restent en police de secours) */
+if(document.fonts&&document.fonts.load) document.fonts.load("500 22px 'IBM Plex Mono'").then(()=>{
+  for(const m of lblCache.values()){ m.map?.dispose(); m.dispose(); } lblCache.clear(); rebuild(false); }).catch(()=>{});
 </script>
 
 </body>

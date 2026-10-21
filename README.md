@@ -15,7 +15,7 @@ Ouvrir `index.html` dans un navigateur. Aucun serveur n'est nécessaire. Three.j
 - **Garde-corps d'une sélection** : dans le panneau Sélection, un bouton par côté (arrière, gauche, droite, avant, biais) enlève ou remet les garde-corps des plateaux sélectionnés ; « Tout enlever » / « Tout remettre ». Un bord sans garde-corps est un bord ouvert (trait jaune).
 - **Escaliers** : avec l'outil Sélection, touche un escalier pour le sélectionner, glisse-le pour le déplacer (le long du bord ou sur un autre bord), décale-le de 50 cm ou supprime-le depuis le panneau
 - Sur téléphone, le panneau devient un tiroir sous la vue 3D
-- Outils : Sélection, Poser, Zone, Escalier, Bord ouvert, Effacer (touches 1 à 6)
+- Outils : Sélection, Poser, Zone, Escalier, Bord ouvert, Effacer, Tracé, Barrières (touches 1 à 8)
 - R pour pivoter, flèches pour déplacer, Suppr pour supprimer, Ctrl+D pour dupliquer, Ctrl+Z / Ctrl+Maj+Z pour annuler / rétablir
 - Le plan est enregistré dans le navigateur (localStorage)
 
@@ -53,6 +53,13 @@ Réglage « Jupes » : aucune, face public, face et côtés, ou tout le tour. Lo
 - **Coton gratté** (jupe) : réglages « Ampleur de la jupe » (tendue × 1, plissée × 1,5 / × 2 / × 2,5) et « Laize coton gratté » (1,30 m par défaut). Pour chaque hauteur de plancher : si la hauteur + 5 cm de fixation tient dans la laize, le tissu court le long de la scène et le métrage = longueur de jupe × ampleur ; sinon, lés verticaux : nombre de lés = longueur × ampleur / laize, chacun de la hauteur + 5 cm. Arrondi au 0,5 m supérieur, hors ourlets et retours.
 - **Moquette** : « Moquette sur les plateaux » + « Laize moquette » (2 m par défaut). Lés parallèles posés niveau par niveau (un lé ne passe jamais d'une hauteur à l'autre), chaque lé coupé à la longueur des plateaux dans sa bande + 5 cm de coupe ; le site garde le sens (ouverture ou profondeur) qui demande le moins de mètres et affiche la surface des plateaux et le taux de chutes. Arrondi au 0,5 m supérieur. Escaliers non compris.
 - Les deux métrages sont dans la nomenclature (rubriques *Habillage* et *Moquette*), donc dans la liste copiée, le plan de montage et l'envoi vers Salle 3D.
+
+## Barrières Vauban et potelets
+
+Outil **Barrières (8)** : au sol, touche un point de départ puis chaque point suivant (grille de 50 cm, angles calés à 45°, Maj : angle libre) ; Échap, « Terminer la ligne » ou un 2e appui au même endroit pour finir. Mêmes modèles 3D que [Salle 3D](https://salle-3d-tools.vercel.app) :
+- **Vauban** à pieds fixes (fiche HERMEQ MB0033) : une barrière par pas de 2,20 m, longueur de chaque tronçon arrondie au pas ; ≈ 16 kg (estimé).
+- **Potelets** VISO REXO100CHC (6,75 kg) et cordons chanvre CI2C de 2 m (0,95 kg) : écart réparti à égalité sur chaque tronçon, au plus 2 m ; l'angle partage son potelet ; le cordon pend selon l'écart.
+- L'outil Effacer retire une ligne entière. Les lignes sont enregistrées avec le projet, comptées dans la nomenclature (rubrique *Barrières et potelets*), dessinées sur le plan de montage et exportées dans le DXF (calque `ASD_BARRIERES`). Elles ne partent pas vers Salle 3D, qui a ses propres outils de tracé.
 
 ## Lien avec Salle 3D
 

@@ -203,6 +203,10 @@ body.simple .hint,body.simple #hInfo{display:none}
 .sp-help{font-size:12.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}
 .sp-sub{font-size:13px;color:var(--muted);margin:12px 0 0}
 .sp-step .sp-sub:first-of-type{margin-top:0}
+.sp-res{margin-top:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:baseline}
+.sp-res b{font-family:var(--f-display);font-weight:700;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums;text-align:right}
+.sp-res span{font-size:13px;line-height:1.35}
+.sp-res span small{display:block;color:var(--muted);font-size:12px}
 .sp-custom{font-size:13px;line-height:1.45;margin:10px 0 0;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 14%,transparent)}
 .sp-docs{border-bottom:0}
 .sp-name{font-size:15px;padding:10px 12px;border-radius:10px;margin-bottom:6px}
@@ -406,7 +410,9 @@ label.ck.multi-sel{display:none}
         </div>
         <div class="sp-step"><h3><i>5</i>Finitions</h3>
           <div class="sp-sub">Jupe noire sous le plancher</div><div class="sp-chips" id="spSkirt"></div>
+          <div class="sp-res" id="spSkirtRes" hidden></div>
           <div class="sp-sub">Moquette sur le plancher</div><div class="sp-chips" id="spMoq"></div>
+          <div class="sp-res" id="spMoqRes" hidden></div>
           <div class="sp-sub">Utilisation</div><div class="sp-chips" id="spUse"></div>
         </div>
       </div>
@@ -674,7 +680,7 @@ label.ck.multi-sel{display:none}
           <dt>Échap</dt><dd>Désélectionner, ou fermer le plan et l'image</dd>
         </dl>
       </details>
-      <p class="note" style="margin-top:10px">Version du 22 octobre 2026 · mode Simple</p>
+      <p class="note" style="margin-top:10px">Version du 22 octobre 2026 · métrages</p>
     </section>
     </div>
   </aside>
@@ -2649,7 +2655,8 @@ function renderSimple(){
   let W=0,D=0; if(S.plats.length){ const pd=planData(); W=(pd.x1-pd.x0)*C; D=(pd.z1-pd.z0)*C; }
   $("spHero").innerHTML=S.plats.length?`<div class="big">${fmt(W,W%1?1:0)} × ${fmt(D,D%1?1:0)}<small>m</small></div>
     <div class="line">${hs.length>1?`plancher à ${hs.map(h=>fmt(h)).join(" et ")} m`:`plancher à ${fmt(hs[0])} m du sol`}, ${fmt(T.surf,T.surf%1?1:0)} m²</div>
-    <div class="meta">${S.plats.length} praticables, ${R.stairs.length?`${R.stairs.length} escalier${R.stairs.length>1?"s":""}`:"pas d'escalier"}, ${R.pieces.length?`${R.pieces.length} garde-corps`:"pas de garde-corps"}<br>Poids du matériel ${T.est?"environ ":""}${kgTxt(T.kg)} kg</div>`
+    <div class="meta">${S.plats.length} praticables, ${R.stairs.length?`${R.stairs.length} escalier${R.stairs.length>1?"s":""}`:"pas d'escalier"}, ${R.pieces.length?`${R.pieces.length} garde-corps`:"pas de garde-corps"}<br>Poids du matériel ${T.est?"environ ":""}${kgTxt(T.kg)} kg${(()=>{ const sk=skirtInfo(R), mq=S.moq==="on"?carpetPlan():null, o=[];
+      if(sk.len) o.push(`jupe ${fmt(Math.ceil(sk.len*2-1e-9)/2,sk.len%1?1:0)} m`); if(mq) o.push(`moquette ${fmt(mq.m,mq.m%1?1:0)} m`); return o.length?`<br>${o.join(", ")}`:""; })()}</div>`
     :`<div class="line">Choisis une taille pour commencer.</div>`;
   $("spCustom").hidden=!custom;
   if(document.activeElement!==$("spName")) $("spName").value=S.name||"";
@@ -2658,6 +2665,15 @@ function renderSimple(){
   chips("spH",[...SP_HEIGHTS.map(h=>[h,`${fmt(h)} m`]),...(SP_HEIGHTS.includes(p.h)?[]:[[p.h,`${fmt(p.h)} m`]])],p.h,"h");
   chips("spStairs",SP_STAIRS,custom?[]:p.stairs,"stair");
   const noEsc=!escFor(p.h); $("spStairsHelp").textContent=noEsc?`Pas d'escalier en catalogue pour ${fmt(p.h)} m : il sera à commander sur mesure.`:"Gauche et droite vus depuis le public. Touche à nouveau pour retirer.";
+  // métrages : jupe (longueur, tissu) et moquette, d'après la scène affichée
+  const sk=skirtInfo(R), m1=v=>fmt(v,v%1?1:0);
+  $("spSkirtRes").hidden=!sk.len;
+  if(sk.len){ const byH=[...sk.byH].sort((a,b)=>a[0]-b[0]), jl=Math.ceil(sk.len*2-1e-9)/2, amp=S.jupA===1?"tendu":`plissé × ${fmt(S.jupA,1)}`;
+    const tissu=byH.map(([h,l])=>cottonFor(h,l)).reduce((t,c)=>t+c.m,0);
+    $("spSkirtRes").innerHTML=`<b>${m1(jl)} m</b><span>de jupe à poser${byH.length>1?` (hauteurs ${byH.map(([h])=>fmt(h)).join(", ")} m)`:`, ${fmt(byH[0][0])} m de haut`}<small>${sk.pinces} pinces de fixation</small></span>`
+      +`<b>${m1(tissu)} m</b><span>de coton gratté noir<small>laize ${fmt(S.jupL)} m, ${amp}, hors ourlets</small></span>`; }
+  const mq=S.moq==="on"&&S.plats.length?carpetPlan():null; $("spMoqRes").hidden=!mq;
+  if(mq) $("spMoqRes").innerHTML=`<b>${m1(mq.m)} m</b><span>de moquette en laize ${fmt(mq.W)} m<small>${mq.n} lé${mq.n>1?"s":""} dans le sens de l'${mq.sens}, pour ${fmt(mq.area,mq.area%1?1:0)} m² de plancher (chutes ${Math.round(mq.waste*100)} %)</small></span>`;
   chips("spGc",SP_GC,p.gc,"gc"); chips("spSkirt",SP_SKIRT,p.skirt,"skirt"); chips("spMoq",[["none","Non"],["on","Oui"]],p.moq,"moq"); chips("spUse",SP_USE,p.ref,"use");
 }
 function setMode(m,store=true){

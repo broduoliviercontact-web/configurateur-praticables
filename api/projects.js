@@ -5,7 +5,8 @@
 import { put, get, del, BlobPreconditionFailedError, BlobNotFoundError } from "@vercel/blob";
 
 const ACCESS = process.env.BLOB_ACCESS === "public" ? "public" : "private";
-const INDEX = "projects/index.json";
+const ROOT = "configurateur-praticables/"; // dossier propre au configurateur : le stockage peut être partagé avec Salle 3D
+const INDEX = ROOT + "projects/index.json";
 const ID = /^[a-z0-9]{6,24}$/;
 const MAX_BYTES = 2_000_000;
 
@@ -50,7 +51,7 @@ export default async function handler(req, res) {
       return send(res, 200, { projects });
     }
     if (req.method === "GET") {
-      const cur = await readJson(`projects/${id}.json`);
+      const cur = await readJson(`${ROOT}projects/${id}.json`);
       if (!cur) return send(res, 404, { error: "projet introuvable" });
       return send(res, 200, { ...cur.json, etag: cur.etag });
     }
@@ -62,12 +63,12 @@ export default async function handler(req, res) {
       if (JSON.stringify(doc).length > MAX_BYTES) return send(res, 413, { error: "projet trop lourd" });
       let r;
       try {
-        if (b.etag) r = await write(`projects/${id}.json`, doc, b.etag);
-        else if (b.force) r = await write(`projects/${id}.json`, doc);
-        else r = await put(`projects/${id}.json`, JSON.stringify(doc), { access: ACCESS, contentType: "application/json", addRandomSuffix: false, cacheControlMaxAge: 60 });
+        if (b.etag) r = await write(`${ROOT}projects/${id}.json`, doc, b.etag);
+        else if (b.force) r = await write(`${ROOT}projects/${id}.json`, doc);
+        else r = await put(`${ROOT}projects/${id}.json`, JSON.stringify(doc), { access: ACCESS, contentType: "application/json", addRandomSuffix: false, cacheControlMaxAge: 60 });
       } catch (e) {
         if (e instanceof BlobPreconditionFailedError || /already exists/i.test(String(e?.message))) {
-          const cur = await readJson(`projects/${id}.json`);
+          const cur = await readJson(`${ROOT}projects/${id}.json`);
           return send(res, 409, { error: "modifié ailleurs", remote: cur ? { ...cur.json, etag: cur.etag } : null });
         }
         throw e;
@@ -76,7 +77,7 @@ export default async function handler(req, res) {
       return send(res, 200, { id, t, etag: r.etag });
     }
     if (req.method === "DELETE") {
-      await del(`projects/${id}.json`).catch(() => {});
+      await del(`${ROOT}projects/${id}.json`).catch(() => {});
       await updateIndex(list => list.filter(p => p.id !== id));
       return send(res, 200, { ok: true });
     }

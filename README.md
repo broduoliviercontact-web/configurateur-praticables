@@ -21,6 +21,16 @@ Ouvrir `index.html` dans un navigateur. Aucun serveur n'est nécessaire. Three.j
 - R pour pivoter, flèches pour déplacer, Suppr pour supprimer, Ctrl+D pour dupliquer, Ctrl+Z / Ctrl+Maj+Z pour annuler / rétablir
 - Le plan est enregistré dans le navigateur (localStorage)
 
+## Mode Simple
+
+Bouton **Simple / Expert** en haut du panneau ; même page, mêmes projets. Le mode est mémorisé dans le navigateur, et l'adresse `https://configurateur-praticables.vercel.app/?mode=simple` ouvre directement le mode Simple (à donner à un client ou à un débutant).
+
+- Réglages guidés : 1 taille (largeur face au public, profondeur, tailles courantes), 2 hauteur du plancher, 3 escaliers (devant au centre, derrière à gauche ou à droite, côtés), 4 garde-corps (partout sauf face public, tout autour, aucun), 5 finitions (jupe, moquette, intérieur 500 kg/m² ou extérieur 750 kg/m²).
+- La scène est redessinée à chaque réglage (bouton Annuler pour revenir). Dans la vue 3D on tourne et on zoome, mais on ne modifie rien à la souris.
+- En haut : dimensions en grand, hauteur, surface, nombre de praticables, escaliers, garde-corps et poids.
+- Documents : pour le client (récapitulatif, image, lien de la scène qui s'ouvre en mode Simple), pour le montage (liste du matériel lisible, plan de montage, estimation de prix).
+- Une scène dessinée ou retouchée en mode Expert reste utilisable ; un bandeau prévient qu'un réglage du mode Simple la redessine entièrement.
+
 ## Projets et partage
 
 - **Projets** : chaque scène est un projet enregistré dans le navigateur ; la liste permet d'ouvrir, dupliquer ou supprimer. « Nouveau projet » garde l'ancien dans la liste.

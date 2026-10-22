@@ -169,6 +169,54 @@ dl.cl dd{margin:0;color:#14181c}
   .sheet{max-width:none;margin:0;padding:0;box-shadow:none}
   .sheet .cols{break-before:page;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
 }
+/* ===== Mode simple ===== */
+.titleacts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.modesw{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--bg)}
+.modesw button{border:0;background:transparent;color:var(--muted);font:600 12px var(--f-body);padding:5px 11px;border-radius:999px;cursor:pointer}
+.modesw button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+#simplePanel{display:none}
+body.simple #simplePanel{display:flex;flex-direction:column;gap:6px}
+body.simple #toolsSec,body.simple #selPanel,body.simple #stairPanel,body.simple #more,body.simple #newProj,body.simple .grab{display:none!important}
+body.simple .hint,body.simple #hInfo{display:none}
+.sp-hero{padding:4px 0 14px;border-bottom:1px solid var(--line)}
+.sp-hero .big{font-family:var(--f-display);font-weight:700;font-size:56px;line-height:.95;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.sp-hero .big small{font-size:26px;font-weight:600;color:var(--muted);margin-left:4px}
+.sp-hero .line{font-size:15px;margin-top:6px}
+.sp-hero .meta{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5}
+.sp-step{padding:14px 0;border-bottom:1px solid var(--line)}
+.sp-step h3{display:flex;align-items:center;gap:10px;margin:0 0 10px;font:600 16px var(--f-body)}
+.sp-step h3 i{font-style:normal;flex:0 0 26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:700 14px var(--f-display)}
+.sp-dims{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sp-f{display:grid;gap:6px;font-size:13px;color:var(--muted)}
+.sp-num{display:grid;grid-template-columns:40px minmax(0,1fr) 40px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+.sp-num button{border:0;background:transparent;color:var(--ink);font:500 20px var(--f-body);cursor:pointer;min-height:44px}
+.sp-num button:hover{background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.sp-num input{border:0;border-inline:1px solid var(--line);background:transparent;color:var(--ink);text-align:center;font:600 20px var(--f-body);min-width:0;width:100%;-moz-appearance:textfield;appearance:textfield}
+.sp-num input::-webkit-inner-spin-button,.sp-num input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.sp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sp-chips.sp-col{flex-direction:column}
+.sp-chips button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:9px 13px;font:500 14px var(--f-body);cursor:pointer;min-height:42px;text-align:left}
+.sp-chips button:hover{border-color:var(--muted)}
+.sp-chips button[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel));box-shadow:inset 0 0 0 1px var(--accent)}
+.sp-chips button small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.sp-chips button:disabled{opacity:.4;cursor:default}
+.sp-help{font-size:12.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}
+.sp-sub{font-size:13px;color:var(--muted);margin:12px 0 0}
+.sp-step .sp-sub:first-of-type{margin-top:0}
+.sp-custom{font-size:13px;line-height:1.45;margin:10px 0 0;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.sp-docs{border-bottom:0}
+.sp-name{font-size:15px;padding:10px 12px;border-radius:10px;margin-bottom:6px}
+.sp-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.sp-btns .btn{min-height:44px;font-size:14px}
+.sp-btns .btn:first-child:nth-last-child(odd){grid-column:1/-1}
+.sp-new{margin-top:16px;grid-template-columns:1fr}
+@media (max-width:820px) and (orientation:portrait){
+  body.simple aside{max-height:62%}
+  body.simple aside:not(.open) .sp-steps,body.simple aside:not(.open) .sp-docs{display:none}
+  body.simple .grab.sp-grab{display:flex!important}
+  .sp-hero .big{font-size:42px}
+  .titleacts .modesw button{padding:6px 10px}
+}
 /* Devis Impact : feuille blanche, champs clairs quel que soit le thème */
 .sheet input.num,.sheet input.txt,.sheet select{background:#fff;color:#14181c;border-color:#c9ced6}
 .dv-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:4px 0 14px}
@@ -328,8 +376,49 @@ label.ck.multi-sel{display:none}
         <h1>Praticables <span>ASD</span></h1>
         <div class="sub" id="projName">Préparation de montage</div>
       </div>
-      <button class="btn primary" id="newProj">Nouveau projet</button>
+      <div class="titleacts">
+        <div class="modesw" role="group" aria-label="Mode d'affichage"><button type="button" data-mode="simple">Simple</button><button type="button" data-mode="expert">Expert</button></div>
+        <button class="btn primary" id="newProj">Nouveau projet</button>
+      </div>
     </div>
+
+    <section id="simplePanel" aria-label="Réglages de la scène">
+      <div class="sp-hero" id="spHero"></div>
+      <div class="sp-steps">
+        <p class="sp-custom" id="spCustom" hidden>Cette scène a été dessinée ou retouchée en mode Expert. Tu peux sortir ses documents tels quels ; changer un réglage ci-dessous la redessine entièrement (bouton Annuler pour revenir).</p>
+        <div class="sp-step"><h3><i>1</i>Taille</h3>
+          <div class="sp-dims">
+            <label class="sp-f">Largeur, face au public<span class="sp-num"><button type="button" data-step="w" data-d="-1" aria-label="Moins large">−</button><input id="spW" type="number" inputmode="decimal" min="1" max="40" step="0.5"><button type="button" data-step="w" data-d="1" aria-label="Plus large">+</button></span></label>
+            <label class="sp-f">Profondeur<span class="sp-num"><button type="button" data-step="d" data-d="-1" aria-label="Moins profond">−</button><input id="spD" type="number" inputmode="decimal" min="1" max="40" step="0.5"><button type="button" data-step="d" data-d="1" aria-label="Plus profond">+</button></span></label>
+          </div>
+          <div class="sp-chips" id="spSizes"></div>
+        </div>
+        <div class="sp-step"><h3><i>2</i>Hauteur du plancher</h3>
+          <div class="sp-chips" id="spH"></div>
+          <p class="sp-help">Mesurée du sol au dessus du plancher.</p>
+        </div>
+        <div class="sp-step"><h3><i>3</i>Escaliers d'accès</h3>
+          <div class="sp-chips" id="spStairs"></div>
+          <p class="sp-help" id="spStairsHelp">Gauche et droite vus depuis le public. Touche à nouveau pour retirer.</p>
+        </div>
+        <div class="sp-step"><h3><i>4</i>Garde-corps</h3>
+          <div class="sp-chips sp-col" id="spGc"></div>
+        </div>
+        <div class="sp-step"><h3><i>5</i>Finitions</h3>
+          <div class="sp-sub">Jupe noire sous le plancher</div><div class="sp-chips" id="spSkirt"></div>
+          <div class="sp-sub">Moquette sur le plancher</div><div class="sp-chips" id="spMoq"></div>
+          <div class="sp-sub">Utilisation</div><div class="sp-chips" id="spUse"></div>
+        </div>
+      </div>
+      <div class="sp-step sp-docs"><h3><i>6</i>Documents</h3>
+        <label class="sp-f">Nom de la scène, repris sur les documents<input class="txt sp-name" id="spName" type="text" maxlength="80" autocomplete="off" placeholder="Ex. Concert du 5 décembre"></label>
+        <div class="sp-sub">Pour le client</div>
+        <div class="sp-btns"><button type="button" class="btn primary" data-doc="client">Récapitulatif client</button><button type="button" class="btn" data-doc="img">Image de la scène</button><button type="button" class="btn" data-doc="share">Copier le lien de la scène</button></div>
+        <div class="sp-sub">Pour le montage</div>
+        <div class="sp-btns"><button type="button" class="btn" data-doc="liste">Liste du matériel</button><button type="button" class="btn" data-doc="plan">Plan de montage</button><button type="button" class="btn" data-doc="devis">Estimation de prix</button></div>
+        <div class="sp-btns sp-new"><button type="button" class="btn" data-doc="new">Nouvelle scène</button></div>
+      </div>
+    </section>
 
     <section id="toolsSec">
       <h2>Outil</h2>
@@ -585,7 +674,7 @@ label.ck.multi-sel{display:none}
           <dt>Échap</dt><dd>Désélectionner, ou fermer le plan et l'image</dd>
         </dl>
       </details>
-      <p class="note" style="margin-top:10px">Version du 22 octobre 2026</p>
+      <p class="note" style="margin-top:10px">Version du 22 octobre 2026 · mode Simple</p>
     </section>
     </div>
   </aside>
@@ -716,13 +805,13 @@ const SITE="https://configurateur-praticables.vercel.app/", SALLE="https://salle
 const fmt=(n,d=2)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:2});
 
 /* ================= État & historique ================= */
-const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null,done:{},moq:"none",moqW:2,jupA:1,jupL:1.3,bars:[],vbP:2.2,vbF:0,vbA:1,vbH:1.1,devis:defaultDevis(),versions:[],annos:[]});
+const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null,done:{},moq:"none",moqW:2,jupA:1,jupL:1.3,bars:[],vbP:2.2,vbF:0,vbA:1,vbH:1.1,devis:defaultDevis(),versions:[],annos:[],simple:null});
 const defaultDevis=()=>({rem:0,tr:"auto",ov:{},liv:"",rep:"",lieu:"Les Grandes Serres de Pantin"});
 let S=defaultS(), curPid=null, pendingLink=null;
 let firstRun=false, selStair=null;
 let tool="sel", curRef="PRI-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, showDims=true, multi=false;
 let sel=new Set(), hist=[], fut=[];
-const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name,skirt:S.skirt,cart:S.cart,moq:S.moq,moqW:S.moqW,jupA:S.jupA,jupL:S.jupL,bars:S.bars,vbP:S.vbP,vbF:S.vbF,vbA:S.vbA,vbH:S.vbH,annos:S.annos});
+const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name,skirt:S.skirt,cart:S.cart,moq:S.moq,moqW:S.moqW,jupA:S.jupA,jupL:S.jupL,bars:S.bars,vbP:S.vbP,vbF:S.vbF,vbA:S.vbA,vbH:S.vbH,annos:S.annos,simple:S.simple});
 function restore(js){ Object.assign(S,JSON.parse(js)); sel=new Set([...sel].filter(id=>S.plats.some(p=>p.id===id))); syncInputs(); }
 function syncInputs(){
   const hs=document.getElementById("height"), gm=document.getElementById("gcMode");
@@ -739,10 +828,12 @@ function redo(){ if(!fut.length) return; hist.push(snap()); restore(fut.pop()); 
 
 /* scène par défaut : 8 × 8 m en PRI-R21 (ASD 500 kg/m²) à 1 m, face public ouverte, escalier à l'arrière côté droit (vu du public) */
 function sample(){
+  const sp={w:8,d:8,h:1.0,ref:"PRI-R21",gc:"front",stairs:["back-end"],skirt:"front",moq:"none"};
   const p=planScene(8,8,"PRI-R21",false);
   S.nid=1; S.H=1.0; S.plats=p.plats.map(q=>({id:S.nid++,...q,h:1.0}));
   S.open=sideKeys("front",p.Wc,p.Dc);
   S.stairs=stairsFromSlots(new Set(["back-end"]),p.Wc,p.Dc).stairs;
+  S.skirt="front"; S.moq="none"; S.simple={...sp,sig:sceneSig()};
 }
 /* ancien exemple (12 plateaux avec triangles) : remplacé par la scène 8 × 8 */
 const isOld8=d=>d?.name==="Scène 8 × 8 m"&&Array.isArray(d.plats)&&d.plats.length===32&&d.plats.every(p=>p.ref==="PRA-R21"&&+p.h===1);
@@ -785,6 +876,7 @@ function sanitize(d){
       const q=+v.q, p=+v.p, e={}; if(v.q!=null&&Number.isFinite(q)&&q>=0&&q<1e5) e.q=q; if(v.p!=null&&Number.isFinite(p)&&p>=0&&p<1e6) e.p=p; if(Object.keys(e).length) ov[k]=e; }
     o.devis={rem:Math.min(100,Math.max(0,num(d.rem))),tr:["auto","none","12","50"].includes(d.tr)?d.tr:"auto",ov,
       liv:/^\d{4}-\d{2}-\d{2}$/.test(d.liv)?d.liv:"",rep:/^\d{4}-\d{2}-\d{2}$/.test(d.rep)?d.rep:"",lieu:d.lieu==null?defaultDevis().lieu:str(d.lieu,120)}; }
+  o.simple=simpleClean(o.simple);
   o.versions=(Array.isArray(o.versions)?o.versions:[]).slice(-30).filter(v=>v&&typeof v==="object"&&v.data&&typeof v.data==="object")
     .map(v=>({id:String(v.id||newId()).slice(0,20),label:String(v.label||"Version").slice(0,60),t:Number.isFinite(+v.t)?+v.t:Date.now(),data:sanitize({...v.data,versions:[]})}))
     .map(v=>(delete v.data.versions,v));
@@ -1014,6 +1106,7 @@ function renderBom(R){
     <dt>Charge admissible</dt><dd>${w.chg} kg/m²${w.estC?" (estimé)":""}, limitée par ${w.ref} · ${fmt(T.surf,0)} m² soit ${fmt(w.chg*T.surf/1000,1)} t réparties</dd>
     <dt>Transport</dt><dd>${T.carts} chariot${T.carts>1?"s":""} de ${S.cart} plateaux 2 × 1 (${fmt(T.eq2,1)} équivalents 2 × 1)</dd>`:"";
   if(document.getElementById("parcBox")?.open) renderParc();
+  if(typeof renderSimple==="function"&&simpleMode) renderSimple();
   const sh=lastBom.filter(r=>r.length>1&&parcShort(r)>0);
   document.getElementById("parcWarn").hidden=!sh.length;
   document.getElementById("parcWarn").textContent=sh.length?`Stock insuffisant : ${sh.map(r=>`${r[0]} (manque ${parcShort(r)})`).join(", ")}. Complète par une location ou change de référence.`:"";
@@ -1418,7 +1511,7 @@ function traceClick(){
 /* ================= Pointeur ================= */
 let ptr=null;
 cv.addEventListener("pointerdown",e=>{
-  if(e.button>0) return;
+  if(e.button>0||simpleMode) return; // mode simple : la vue tourne, rien ne se modifie à la souris
   ptr={x:e.clientX,y:e.clientY,moved:false}; setRay(e);
   if(tool==="sel"){
     const hit=hitAny();
@@ -1644,6 +1737,7 @@ document.addEventListener("keydown",e=>{
   // plan de montage ou image client ouverts : la scène derrière ne reçoit aucun raccourci ; Échap ferme la fenêtre
   if(!$("planModal").hidden||!$("imgModal").hidden){ if(e.key==="Escape"){ e.preventDefault(); if(annoMode&&$("imgModal").hidden){ annoMode=null; annoStart=null; openPlan(); } else closeOverlays(); } return; }
   const k=(e.key||"").toLowerCase(), mod=e.ctrlKey||e.metaKey;
+  if(simpleMode&&!(mod&&(k==="z"||k==="y"))) return;
   if(e.target.closest('textarea,input[type="text"],input[type="number"]')) return;
   if(e.target.closest("select,input")&&!(mod&&(k==="z"||k==="y"))) return;
   if(mod&&(k==="z"||k==="y")&&e.target.closest("select,input")) e.target.blur();
@@ -1671,7 +1765,7 @@ document.addEventListener("keydown",e=>{
 const mq=matchMedia("(max-width:820px) and (orientation:portrait)");
 const sheet=document.getElementById("sheet"), tog=document.getElementById("sheetToggle"), appEl=document.querySelector(".app");
 function setSheet(open){ sheet.classList.toggle("open",open); document.body.classList.toggle("sheet-open",open); tog.setAttribute("aria-expanded",String(open));
-  tog.querySelector("span").textContent=open?"Réduire le panneau":"Projets, catalogue, poids et nomenclature"; tog.querySelector("b").textContent=open?"▼":"▲"; if(!open) sheet.scrollTop=0; requestAnimationFrame(resize); }
+  tog.querySelector("span").textContent=open?"Réduire le panneau":simpleMode?"Régler la scène et sortir les documents":"Projets, catalogue, poids et nomenclature"; tog.querySelector("b").textContent=open?"▼":"▲"; if(!open) sheet.scrollTop=0; requestAnimationFrame(resize); }
 let grabY=null, grabSwiped=false;
 tog.addEventListener("pointerdown",e=>{ grabY=e.clientY; grabSwiped=false; });
 tog.addEventListener("pointerup",e=>{ if(grabY==null) return; const dy=e.clientY-grabY; grabY=null;
@@ -2227,8 +2321,8 @@ const exportPdfSafe=()=>exportPdf().catch(()=>toast("Le PDF n'a pas pu être cr�
 
 /* ================= Feuilles : modes, fiche de chargement, récapitulatif client ================= */
 let sheetM="plan";
-function sheetMode(m){ sheetM=m; $("planTitle").textContent={plan:"Plan de montage",devis:"Devis Impact Événement",charge:"Fiche de chargement",client:"Récapitulatif client"}[m];
-  $("planDxf").hidden=$("planPdf").hidden=m!=="plan"; $("dvCopy").hidden=m==="plan"; $("dvCopy").textContent={devis:"Copier la demande",charge:"Copier la fiche",client:"Copier le texte"}[m]||"";
+function sheetMode(m){ sheetM=m; $("planTitle").textContent={plan:"Plan de montage",devis:"Devis Impact Événement",charge:"Fiche de chargement",client:"Récapitulatif client",liste:"Liste du matériel"}[m];
+  $("planDxf").hidden=$("planPdf").hidden=m!=="plan"; $("dvCopy").hidden=m==="plan"; $("dvCopy").textContent={devis:"Copier la demande",charge:"Copier la fiche",client:"Copier le texte",liste:"Copier la liste"}[m]||"";
   if(m!=="plan"){ annoMode=null; annoStart=null; } }
 function copyTxt(t,ok){ navigator.clipboard.writeText(t).then(()=>toast(ok)).catch(()=>toast("Copie impossible ici")); }
 const numRanges=a=>{ const o=[]; for(let i=0;i<a.length;){ let j=i; while(j+1<a.length&&a[j+1]===a[j]+1) j++; o.push(j-i>=2?`${a[i]} à ${a[j]}`:j>i?`${a[i]}, ${a[j]}`:`${a[i]}`); i=j+1; } return o.join(", "); };
@@ -2380,7 +2474,7 @@ $("planSheet").addEventListener("change",e=>{ const t=e.target; if(!t.closest(".
   if(t.id==="dvLiv") S.devis.liv=t.value; if(t.id==="dvRep") S.devis.rep=t.value; if(t.id==="dvTr") S.devis.tr=t.value;
   save(); if(["dvTr","dvLiv","dvRep","dvLieu"].includes(t.id)) renderDevis(); }); // pas de rendu sur les cases du tableau : le focus suit la touche Tab
 $("planSheet").addEventListener("click",e=>{ if(e.target.id!=="dvReset") return; S.devis.ov={}; save(); renderDevis(); toast("Quantités et prix recalculés depuis la scène"); });
-$("dvCopy").onclick=()=>{ if(sheetM==="charge"){ copyTxt(chargeText(),"Fiche de chargement copiée"); return; } if(sheetM==="client"){ copyTxt(clientText(),"Récapitulatif copié"); return; } const D=S.devis, dt=v=>v?new Date(v+"T12:00").toLocaleDateString("fr-FR"):"à préciser";
+$("dvCopy").onclick=()=>{ if(sheetM==="liste"){ $("copy").onclick(); return; } if(sheetM==="charge"){ copyTxt(chargeText(),"Fiche de chargement copiée"); return; } if(sheetM==="client"){ copyTxt(clientText(),"Récapitulatif copié"); return; } const D=S.devis, dt=v=>v?new Date(v+"T12:00").toLocaleDateString("fr-FR"):"à préciser";
   const txt=`Demande de devis de location — ${S.name||"Projet praticables"}\n\nLivraison : ${dt(D.liv)}\nReprise : ${dt(D.rep)}\nLieu : ${D.lieu}\n\n`
     +dvLines.map(l=>`${fmt(l.q,l.q%1?1:0)} × ${l.nom}${l.ref?` (réf. ${l.ref})`:""}`).join("\n");
   navigator.clipboard.writeText(txt).then(()=>toast("Demande copiée, prête à coller dans un e-mail à Impact")).catch(()=>toast("Copie impossible ici")); };
@@ -2510,6 +2604,101 @@ $("toSalle").onclick=async()=>{
   const w=window.open(url,"_blank"); if(!w){ lk.hidden=false; toast("Clique sur « Ouvrir Salle 3D avec la scène »"); } else toast("Salle 3D s'ouvre avec la scène, au centre de la vue");
 };
 
+/* ================= Mode simple : réglages guidés, scène générée, documents ================= */
+let simpleMode=false;
+const SP_SIZES=[[4,2],[6,4],[8,4],[8,6],[10,6],[12,8]];
+const SP_HEIGHTS=[0.2,0.4,0.6,0.8,1.0,1.2];
+const SP_STAIRS=[["front-mid","Devant, au centre"],["back-a0","Derrière, à gauche"],["back-end","Derrière, à droite"],["left-mid","Côté gauche"],["right-mid","Côté droit"]];
+const SP_GC=[["front","Partout sauf face public","pour jouer ou parler face au public"],["all","Tout autour","estrade fermée, régie, tribune"],["none","Aucun","seulement pour une scène très basse"]];
+const SP_SKIRT=[["none","Non"],["front","Devant"],["visible","Devant et côtés"],["all","Tout le tour"]];
+const SP_USE=[["PRI-R21","Intérieur","jusqu'à 500 kg/m²"],["PRA-R21","Extérieur","jusqu'à 750 kg/m²"]];
+function simpleClean(v){ if(!v||typeof v!=="object") return null; const n=x=>Number.isFinite(+x)?+x:0;
+  return {w:Math.min(40,Math.max(1,Math.round(n(v.w)*2)/2||8)),d:Math.min(40,Math.max(1,Math.round(n(v.d)*2)/2||4)),h:HEIGHTS.includes(+v.h)?+v.h:1.0,
+    ref:["PRI-R21","PRA-R21"].includes(v.ref)?v.ref:"PRI-R21",gc:["front","all","none"].includes(v.gc)?v.gc:"front",
+    stairs:(Array.isArray(v.stairs)?v.stairs:[]).filter(id=>SP_STAIRS.some(o=>o[0]===id)),skirt:["none","front","visible","all"].includes(v.skirt)?v.skirt:"front",
+    moq:v.moq==="on"?"on":"none",sig:typeof v.sig==="string"?v.sig.slice(0,24):""}; }
+/* empreinte de la scène : différente dès qu'on l'a retouchée en mode Expert */
+function sceneSig(){ const t=JSON.stringify([S.plats.map(p=>[p.ref,p.x,p.z,p.rot,p.h]).sort(),[...S.open].sort(),S.stairs.map(q=>[q.o,q.line,q.a,q.n]).sort(),S.gc,S.skirt,S.moq]);
+  let h=2166136261; for(let i=0;i<t.length;i++){ h^=t.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36)+t.length.toString(36); }
+const simpleCustom=()=>!S.simple||S.simple.sig!==sceneSig();
+/* réglages déduits d'une scène dessinée en mode Expert */
+function simpleGuess(){ if(!S.plats.length) return simpleClean({});
+  const {x0,z0,x1,z1}=planData(), hs=S.plats.map(p=>p.h), h=hs.sort((a,b)=>hs.filter(v=>v===b).length-hs.filter(v=>v===a).length)[0];
+  return simpleClean({w:(x1-x0)*C,d:(z1-z0)*C,h,ref:S.plats.some(p=>p.ref.startsWith("PRA"))?"PRA-R21":"PRI-R21",gc:S.gc==="none"?"none":S.open.length?"front":"all",stairs:[],skirt:S.skirt,moq:S.moq}); }
+function simpleBuild(p){
+  const plan=planScene(p.w,p.d,p.ref,true); S.nid=1;
+  S.plats=plan.plats.map(q=>({id:S.nid++,...q,h:p.h})); S.H=p.h;
+  S.gc=p.gc==="none"?"none":(S.gc==="sep"?"sep":"kit");
+  S.open=p.gc==="front"?sideKeys("front",plan.Wc,plan.Dc):[];
+  S.stairs=stairsFromSlots(new Set(p.stairs),plan.Wc,plan.Dc).stairs;
+  S.skirt=p.skirt; S.moq=p.moq; S.annos=[];
+  S.simple={...p,sig:""};
+}
+function simpleSet(patch){
+  const cur=S.simple&&!simpleCustom()?S.simple:simpleGuess(), p=simpleClean({...cur,...patch});
+  sel.clear(); selStair=null;
+  const reframe=simpleCustom()||["w","d","h"].some(k=>k in patch);
+  const auto=!S.name||/^(Scène|Nouvelle scène)( [\d,]+ × [\d,]+ m)?$/.test(S.name);
+  act(()=>{ simpleBuild(p); if(auto) S.name=`Scène ${fmt(p.w,p.w%1?1:0)} × ${fmt(p.d,p.d%1?1:0)} m`; }); S.simple.sig=sceneSig(); syncInputs(); save(); if(reframe) fit("3d"); renderSimple();
+}
+function chips(el,items,cur,attr){ $(el).innerHTML=items.map(([v,l,sub])=>`<button type="button" data-${attr}="${v}" aria-pressed="${Array.isArray(cur)?cur.includes(v):String(cur)===String(v)}">${l}${sub?`<small>${sub}</small>`:""}</button>`).join(""); }
+function renderSimple(){
+  if(!simpleMode||!$("simplePanel")) return;
+  const custom=simpleCustom(), p=custom?simpleGuess():S.simple, T=lastTot||totals();
+  const hs=[...new Set(S.plats.map(q=>q.h))].sort((a,b)=>a-b);
+  let W=0,D=0; if(S.plats.length){ const pd=planData(); W=(pd.x1-pd.x0)*C; D=(pd.z1-pd.z0)*C; }
+  $("spHero").innerHTML=S.plats.length?`<div class="big">${fmt(W,W%1?1:0)} × ${fmt(D,D%1?1:0)}<small>m</small></div>
+    <div class="line">${hs.length>1?`plancher à ${hs.map(h=>fmt(h)).join(" et ")} m`:`plancher à ${fmt(hs[0])} m du sol`}, ${fmt(T.surf,T.surf%1?1:0)} m²</div>
+    <div class="meta">${S.plats.length} praticables, ${R.stairs.length?`${R.stairs.length} escalier${R.stairs.length>1?"s":""}`:"pas d'escalier"}, ${R.pieces.length?`${R.pieces.length} garde-corps`:"pas de garde-corps"}<br>Poids du matériel ${T.est?"environ ":""}${kgTxt(T.kg)} kg</div>`
+    :`<div class="line">Choisis une taille pour commencer.</div>`;
+  $("spCustom").hidden=!custom;
+  if(document.activeElement!==$("spName")) $("spName").value=S.name||"";
+  if(document.activeElement!==$("spW")) $("spW").value=p.w; if(document.activeElement!==$("spD")) $("spD").value=p.d;
+  chips("spSizes",SP_SIZES.map(([w,d])=>[`${w}x${d}`,`${w} × ${d} m`]),custom?"":`${p.w}x${p.d}`,"size");
+  chips("spH",[...SP_HEIGHTS.map(h=>[h,`${fmt(h)} m`]),...(SP_HEIGHTS.includes(p.h)?[]:[[p.h,`${fmt(p.h)} m`]])],p.h,"h");
+  chips("spStairs",SP_STAIRS,custom?[]:p.stairs,"stair");
+  const noEsc=!escFor(p.h); $("spStairsHelp").textContent=noEsc?`Pas d'escalier en catalogue pour ${fmt(p.h)} m : il sera à commander sur mesure.`:"Gauche et droite vus depuis le public. Touche à nouveau pour retirer.";
+  chips("spGc",SP_GC,p.gc,"gc"); chips("spSkirt",SP_SKIRT,p.skirt,"skirt"); chips("spMoq",[["none","Non"],["on","Oui"]],p.moq,"moq"); chips("spUse",SP_USE,p.ref,"use");
+}
+function setMode(m,store=true){
+  simpleMode=m==="simple"; document.body.classList.toggle("simple",simpleMode);
+  document.querySelectorAll(".modesw button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.mode===m)));
+  if(store) try{ localStorage.setItem("praticables-mode",m); }catch(e){}
+  if(simpleMode){ setTool("sel"); sel.clear(); selStair=null; if(R) rebuild(false); renderSimple(); }
+  const g=$("sheetToggle"); if(g){ g.classList.toggle("sp-grab",simpleMode); setSheet(sheet.classList.contains("open")); }
+  requestAnimationFrame(resize);
+}
+document.querySelector(".modesw").addEventListener("click",e=>{ const b=e.target.closest("[data-mode]"); if(b) setMode(b.dataset.mode); });
+$("simplePanel").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; const d=b.dataset;
+  const cur=simpleCustom()?simpleGuess():S.simple;
+  if(d.step){ const k=d.step, v=Math.min(40,Math.max(1,(+$(k==="w"?"spW":"spD").value||cur[k])+(+d.d)*0.5)); simpleSet({[k]:v}); return; }
+  if(d.size){ const [w,dd]=d.size.split("x").map(Number); simpleSet({w,d:dd}); return; }
+  if(d.h) return simpleSet({h:+d.h});
+  if(d.stair){ const st=simpleCustom()?[]:[...cur.stairs]; const i=st.indexOf(d.stair); i>=0?st.splice(i,1):st.push(d.stair); return simpleSet({stairs:st}); }
+  if(d.gc) return simpleSet({gc:d.gc}); if(d.skirt) return simpleSet({skirt:d.skirt}); if(d.moq) return simpleSet({moq:d.moq}); if(d.use) return simpleSet({ref:d.use});
+  if(d.doc) simpleDoc(d.doc);
+});
+$("spName").addEventListener("input",e=>{ S.name=e.target.value.slice(0,80); syncInputs(); });
+$("spName").addEventListener("change",()=>save());
+for(const id of ["spW","spD"]) $(id).addEventListener("change",e=>{ const v=parseFloat(String(e.target.value).replace(",",".")); if(!Number.isFinite(v)){ renderSimple(); return; } simpleSet({[id==="spW"?"w":"d"]:v}); });
+async function simpleDoc(k){
+  if(k==="new"){ const d=defaultS(), keep=S; S=d; simpleBuild(simpleClean({w:8,d:4,h:1.0,stairs:["back-end"]})); S.simple.sig=sceneSig(); const nd=S; S=keep; nd.name="Nouvelle scène"; startProject(nd); renderSimple(); toast("Nouvelle scène · l'ancienne reste dans tes projets"); return; }
+  if(!S.plats.length){ toast("Choisis d'abord une taille de scène"); return; }
+  if(k==="client") openClient(); if(k==="img") openImg(); if(k==="devis") openDevis(); if(k==="liste") openListe();
+  if(k==="plan"){ sheetMode("plan"); openPlan(); }
+  if(k==="share"){ try{ const url=SITE+"?mode=simple#p="+await packJ({name:S.name,data:bare()}); await navigator.clipboard.writeText(url); toast("Lien copié : il ouvre une copie de la scène en mode Simple"); }
+    catch(e){ toast("Copie impossible ici : passe en mode Expert, rubrique Projets, « Lien de partage »"); } }
+}
+/* liste du matériel lisible : désignation d'abord, référence en petit */
+function openListe(){
+  const rows=lastBom.map(r=>r.length===1?`<tr class="cat"><td colspan="3">${escH(r[0])}</td></tr>`:`<tr><td>${escH(r[1])}${r[0]?`<br><span class="note" style="color:#6a747e">${escH(r[0])}</span>`:""}</td><td class="q" style="font-size:15px">${r[5]?fmt(r[2],r[2]%1?1:0)+" "+r[5]:r[2]}</td><td class="q">${r[3]==null||(r[3]===0&&r[5])?"—":(r[4]?"≈ ":"")+kgTxt(r[3]*r[2])+" kg"}</td></tr>`).join("");
+  const T=lastTot||totals();
+  $("planSheet").innerHTML=`<h1>${escH(S.name||"Scène")} · liste du matériel</h1><div class="meta"><span>Poids total <b>${T.est?"≈ ":""}${kgTxt(T.kg)} kg</b></span><span>Transport <b>${T.carts} chariot${T.carts>1?"s":""}</b></span></div>
+    <div class="tw"><table><tr class="hd"><td>Matériel</td><td class="q">Quantité</td><td class="q">Poids</td></tr>${rows}</table></div>
+    <div class="row" style="margin-top:12px"><button type="button" class="btn" id="lsXlsx">Exporter Excel</button></div>`;
+  $("lsXlsx").onclick=exportXlsx; sheetMode("liste"); $("planModal").hidden=false; $("planClose").focus();
+}
+
 /* ================= Adresse : #p= (lien partagé) et #from= (depuis Salle 3D) ================= */
 async function handleHash(){
   const h=location.hash; let m;
@@ -2527,6 +2716,8 @@ async function handleHash(){
 addEventListener("hashchange",handleHash);
 
 load(); syncInputs(); drawRefs(); setTool("sel"); readTheme(); resize(); rebuild(true); setSheet(false); renderProjects();
+{ const q=new URLSearchParams(location.search).get("mode"); let m=q; if(!["simple","expert"].includes(m)){ try{ m=localStorage.getItem("praticables-mode"); }catch(e){} }
+  setMode(m==="simple"?"simple":"expert",!!q); }
 requestAnimationFrame(()=>requestAnimationFrame(()=>{ resize(); fit(); }));
 handleHash().then(h=>{ if(!h) cloudRefreshCurrent(); });
 /* stockage en ligne pas encore branché : le dire tout de suite dans le bloc « En ligne » */

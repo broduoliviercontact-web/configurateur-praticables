@@ -578,7 +578,7 @@ label.ck.multi-sel{display:none}
           <dt>Échap</dt><dd>Désélectionner, ou fermer le plan et l'image</dd>
         </dl>
       </details>
-      <p class="note" style="margin-top:10px">Version du 21 octobre 2026 · devis Impact</p>
+      <p class="note" style="margin-top:10px">Version du 22 octobre 2026</p>
     </section>
     </div>
   </aside>
@@ -1078,14 +1078,26 @@ const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const lblCache=new Map();
 /* cotes au sol : ouverture devant la scène (côté public), profondeur sur le côté droit, en grand, au-delà des escaliers */
 const dimMat=new THREE.MeshBasicMaterial({color:0x1f5fa8});
-function bigLabel(text,x,z,w){
+function bigLabel(text,x,z,w,parent=world,y=0.35){
   const key="§"+text; let mat=lblCache.get(key);
   if(!mat){ const c=document.createElement("canvas"); c.width=512; c.height=128; const g=c.getContext("2d");
     g.fillStyle="#1f5fa8"; g.beginPath(); g.roundRect?g.roundRect(6,14,500,100,22):g.rect(6,14,500,100); g.fill();
     g.fillStyle="#ffffff"; g.font="600 54px 'IBM Plex Sans', Arial, sans-serif"; g.textAlign="center"; g.textBaseline="middle"; g.fillText(text,256,66);
     mat=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}); lblCache.set(key,mat); }
-  const sp=new THREE.Sprite(mat); sp.scale.set(w,w/4,1); sp.position.set(x,0.35,z); sp.renderOrder=11; world.add(sp);
+  const sp=new THREE.Sprite(mat); sp.scale.set(w,w/4,1); sp.position.set(x,y,z); sp.renderOrder=11; parent.add(sp);
 }
+/* cote d'aperçu au sol pendant un tracé : trait décalé de off (m) côté (nx, nz), traits de rappel, grande étiquette */
+function clearTraceG(){ while(traceG.children.length){ const c=traceG.children.pop(); if(!c.isSprite) c.geometry?.dispose(); } }
+function liveDim(ax,az,bx,bz,nx,nz,text,off=0.6){
+  const L=Math.hypot(bx-ax,bz-az); if(L<1e-6) return; const y=0.015, th=0.04;
+  const seg=(x1,z1,x2,z2)=>{ const l=Math.hypot(x2-x1,z2-z1), m=new THREE.Mesh(new THREE.BoxGeometry(l,0.01,th),dimMat); m.position.set((x1+x2)/2,y,(z1+z2)/2); m.rotation.y=-Math.atan2(z2-z1,x2-x1); traceG.add(m); };
+  const ox=nx*off, oz=nz*off;
+  seg(ax+ox,az+oz,bx+ox,bz+oz);
+  for(const [x,z] of [[ax,az],[bx,bz]]){ seg(x+nx*0.1,z+nz*0.1,x+ox+nx*0.2,z+oz+nz*0.2); }
+  const w=Math.min(1.6,Math.max(0.9,L*0.35));
+  bigLabel(text,(ax+bx)/2+nx*(off+w*0.22),(az+bz)/2+nz*(off+w*0.22),w,traceG,0.3);
+}
+const mTxt=v=>`${fmt(v,Math.abs(v-Math.round(v))<1e-9?0:Math.abs(v*2-Math.round(v*2))<1e-9?1:2)} m`;
 function groundDims(){
   const all=S.plats.flatMap(p=>geomOf(p).abs), x0=Math.min(...all.map(v=>v[0]))*C, x1=Math.max(...all.map(v=>v[0]))*C, z0=Math.min(...all.map(v=>v[1]))*C, z1=Math.max(...all.map(v=>v[1]))*C;
   const run=h=>0.26*Math.max(2,Math.ceil(h/0.2));
@@ -1309,7 +1321,7 @@ const barT={start:null,line:null,k:"vauban"};
 document.getElementById("barKind").addEventListener("click",e=>{ const b=e.target.closest("button[data-k]"); if(!b) return; endBar(true); barT.k=b.dataset.k;
   document.querySelectorAll("#barKind button").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
 document.getElementById("barEnd").onclick=()=>endBar();
-function endBar(silent){ const had=!!barT.start; barT.start=null; barT.line=null; barT.lastG=null; while(traceG.children.length){ const c=traceG.children.pop(); c.geometry?.dispose(); }
+function endBar(silent){ const had=!!barT.start; barT.start=null; barT.line=null; barT.lastG=null; clearTraceG();
   const b=document.getElementById("barEnd"); if(b) b.hidden=true; if(had&&!silent) toast("Ligne terminée"); }
 /* point visé : grille de 50 cm ; depuis le départ, cap calé à 45° (Maj : libre) et, en Vauban, longueur au pas de 2,20 m */
 function barTarget(e){ const p=onPlane(0); if(!p) return null; const g=[Math.round(p.x/C)*C,Math.round(p.z/C)*C]; if(!barT.start) return {pt:g};
@@ -1317,11 +1329,12 @@ function barTarget(e){ const p=onPlane(0); if(!p) return null; const g=[Math.rou
   let a=Math.atan2(dz,dx); if(!e.shiftKey) a=Math.round(a/(Math.PI/4))*(Math.PI/4);
   if(barT.k==="vauban") L=Math.max(1,Math.round(L/VAUBAN_PITCH))*VAUBAN_PITCH; else if(!e.shiftKey) L=Math.max(C,Math.round(L/C)*C);
   return {pt:[+(ax+Math.cos(a)*L).toFixed(3),+(az+Math.sin(a)*L).toFixed(3)],L}; }
-function barPreview(e){ while(traceG.children.length){ const c=traceG.children.pop(); c.geometry?.dispose(); }
+function barPreview(e){ clearTraceG();
   const t=barTarget(e); if(!t) return; const dot=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.04,16),traceMat);
   const s=barT.start||t.pt; dot.position.set(s[0],0.02,s[1]); traceG.add(dot); if(!barT.start||!t.L) return;
   const [ax,az]=barT.start, [bx,bz]=t.pt, m=new THREE.Mesh(new THREE.BoxGeometry(t.L,barT.k==="vauban"?1.1:0.98,0.06),traceMat);
   m.position.set((ax+bx)/2,(barT.k==="vauban"?1.1:0.98)/2,(az+bz)/2); m.rotation.y=-Math.atan2(bz-az,bx-ax); traceG.add(m);
+  { const L=Math.hypot(bx-ax,bz-az), nx=-(bz-az)/L, nz=(bx-ax)/L, sg=nz<0||(nz===0&&nx<0)?-1:1; liveDim(ax,az,bx,bz,nx*sg,nz*sg,mTxt(t.L),0.5); }
   const n=barItems({k:barT.k,pts:[barT.start,t.pt]}).filter(i=>i.t!=="cordon").length;
   document.getElementById("hInfo").innerHTML=barT.k==="vauban"?`<b>${n}</b> Vauban · ${fmt(t.L,2)} m`:`<b>${n-(barT.line!=null?1:0)}</b> potelet${n>1?"s":""} · écart ${fmt(t.L/Math.max(1,Math.ceil(t.L/POT_GAP-1e-6)),2)} m · ${fmt(t.L,2)} m`; }
 function barClick(e){ const t=barTarget(e); if(!t) return;
@@ -1343,7 +1356,7 @@ function renderTraceW(){
 }
 document.getElementById("traceW").addEventListener("click",e=>{ const b=e.target.closest("button[data-w]"); if(!b) return; trace.w=+b.dataset.w; renderTraceW(); });
 document.getElementById("traceEnd").onclick=()=>endTrace();
-function endTrace(silent){ const had=!!trace.start; trace.start=null; while(traceG.children.length){ const c=traceG.children.pop(); c.geometry?.dispose(); }
+function endTrace(silent){ const had=!!trace.start; trace.start=null; clearTraceG();
   const b=document.getElementById("traceEnd"); if(b) b.hidden=true; if(had&&!silent) toast("Tracé terminé"); }
 const gridPt=p=>[Math.round(p.x/C),Math.round(p.z/C)];
 /* tronçon orthogonal depuis le départ vers le point visé (la plus grande direction l'emporte) */
@@ -1367,13 +1380,21 @@ function tracePlan(a,b){
   return out.filter(c=>fits(geomOf(c).abs,new Set()));
 }
 function tracePreview(){
-  while(traceG.children.length){ const c=traceG.children.pop(); c.geometry?.dispose(); }
+  clearTraceG();
   const p=onPlane(S.H); if(!p) return; const g=gridPt(p);
   const dot=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.04,16),traceMat); 
   if(!trace.start){ dot.position.set(g[0]*C,S.H+0.02,g[1]*C); traceG.add(dot); return; }
   const b=traceEndPt(trace.start,g); dot.position.set(trace.start[0]*C,S.H+0.02,trace.start[1]*C); traceG.add(dot);
   if(b[0]===trace.start[0]&&b[1]===trace.start[1]) return;
-  for(const c of tracePlan(trace.start,b)){ const m=new THREE.Mesh(deckGeom(geomOf(c).abs,0.1),traceMat); m.rotation.x=-Math.PI/2; m.position.y=S.H-0.1; traceG.add(m); }
+  const plan=tracePlan(trace.start,b);
+  for(const c of plan){ const m=new THREE.Mesh(deckGeom(geomOf(c).abs,0.1),traceMat); m.rotation.x=-Math.PI/2; m.position.y=S.H-0.1; traceG.add(m); }
+  // mesures du tronçon : bande de la largeur choisie, prolongée d'une demi-largeur à chaque bout
+  const wc=Math.round(trace.w/C), lo=Math.floor(wc/2), a=trace.start, horiz=a[1]===b[1];
+  const rx0=(horiz?Math.min(a[0],b[0]):a[0])-lo, rx1=(horiz?Math.max(a[0],b[0])+wc:a[0]+wc)-lo, rz0=(horiz?a[1]:Math.min(a[1],b[1]))-lo, rz1=(horiz?a[1]+wc:Math.max(a[1],b[1])+wc)-lo;
+  const X0=rx0*C, X1=rx1*C, Z0=rz0*C, Z1=rz1*C, len=horiz?X1-X0:Z1-Z0;
+  if(horiz){ liveDim(X0,Z1,X1,Z1,0,1,mTxt(X1-X0)); liveDim(X1,Z0,X1,Z1,1,0,mTxt(Z1-Z0),0.4); }
+  else { liveDim(X1,Z0,X1,Z1,1,0,mTxt(Z1-Z0)); liveDim(X0,Z1,X1,Z1,0,1,mTxt(X1-X0),0.4); }
+  document.getElementById("hInfo").innerHTML=`Tronçon <b>${mTxt(len)}</b> × ${mTxt(trace.w)} · <b>${plan.length}</b> plateau${plan.length>1?"x":""}`;
 }
 function traceClick(){
   const p=onPlane(S.H); if(!p) return; const g=gridPt(p);
@@ -1426,7 +1447,7 @@ function endPtr(e){
   if(P.drag){ const d=P.drag;
     if(d.dx||d.dz){ if(dragBad){ applyMove(d.ctx,0,0); toast("Emplacement occupé, déplacement annulé"); } else pushHist(d.pre); }
     dragBad=false; rebuild(true); return; }
-  if(P.zone){ zoneG.visible=false; fillZone(P.zone); return; }
+  if(P.zone){ zoneG.visible=false; clearTraceG(); fillZone(P.zone); updateHud(); return; }
   if(P.moved||e.type==="pointercancel") return;
   click(e,P);
 }
@@ -1472,7 +1493,10 @@ function hover(e){
 }
 function zoneRect(z){ return {x0:Math.min(z.sx,z.ex),x1:Math.max(z.sx,z.ex),z0:Math.min(z.sz,z.ez),z1:Math.max(z.sz,z.ez)}; }
 function showZone(z){ const r=zoneRect(z), w=(r.x1-r.x0+1)*C, d=(r.z1-r.z0+1)*C;
-  zoneG.scale.set(w,1,d); zoneG.position.set(r.x0*C+w/2,S.H,r.z0*C+d/2); zoneG.visible=true; ghost.visible=false; }
+  zoneG.scale.set(w,1,d); zoneG.position.set(r.x0*C+w/2,S.H,r.z0*C+d/2); zoneG.visible=true; ghost.visible=false;
+  clearTraceG(); const x0=r.x0*C, x1=x0+w, z0=r.z0*C, z1=z0+d;
+  liveDim(x0,z1,x1,z1,0,1,mTxt(w)); liveDim(x1,z0,x1,z1,1,0,mTxt(d));
+  document.getElementById("hInfo").innerHTML=`Zone <b>${mTxt(w)} × ${mTxt(d)}</b>`; }
 function fillZone(z){
   if(REF[curRef].shape!=="rect"){ toast("La zone se remplit avec un plateau rectangulaire"); return; }
   const r=zoneRect(z), s=shapeOf(curRef,curRot), add=[];
@@ -2496,6 +2520,8 @@ addEventListener("hashchange",handleHash);
 load(); syncInputs(); drawRefs(); setTool("sel"); readTheme(); resize(); rebuild(true); setSheet(false); renderProjects();
 requestAnimationFrame(()=>requestAnimationFrame(()=>{ resize(); fit(); }));
 handleHash().then(h=>{ if(!h) cloudRefreshCurrent(); });
+/* stockage en ligne pas encore branché : le dire tout de suite dans le bloc « En ligne » */
+api("GET").then(r=>{ if(!r.ok){ cloudErr=r.j.error||`erreur ${r.status}`; renderCloud(); } }).catch(()=>{});
 /* étiquettes 3D : redessinées une fois la police IBM Plex Mono chargée (sinon elles restent en police de secours) */
 if(document.fonts&&document.fonts.load) document.fonts.load("500 22px 'IBM Plex Mono'").then(()=>{
   for(const m of lblCache.values()){ m.map?.dispose(); m.dispose(); } lblCache.clear(); rebuild(false); }).catch(()=>{});

@@ -25,7 +25,7 @@ Ouvrir `index.html` dans un navigateur. Aucun serveur n'est nécessaire. Three.j
 
 Bouton **Simple / Expert** en haut du panneau ; même page, mêmes projets. Le mode est mémorisé dans le navigateur, et l'adresse `https://configurateur-praticables.vercel.app/?mode=simple` ouvre directement le mode Simple (à donner à un client ou à un débutant).
 
-- Réglages guidés : 1 taille (largeur face au public, profondeur, tailles courantes), 2 hauteur du plancher, 3 escaliers (devant au centre, derrière à gauche ou à droite, côtés), 4 garde-corps (partout sauf face public, tout autour, aucun), 5 finitions (jupe, moquette, intérieur 500 kg/m² ou extérieur 750 kg/m²).
+- Réglages guidés : 1 taille (largeur face au public, profondeur, tailles courantes), 2 hauteur du plancher, 3 escaliers (devant au centre, derrière à gauche ou à droite, côtés), 4 garde-corps (partout sauf face public, tout autour, aucun), 5 barrières Vauban devant la scène (non, une ligne devant, ou fermée sur les côtés ; distance 1 à 3 m, reculée si un escalier avant dépasse ; longueur 2,00 / 2,20 / 2,50 m), 6 finitions (jupe, moquette, intérieur 500 kg/m² ou extérieur 750 kg/m²), avec les métrages de jupe, de coton gratté et de moquette.
 - La scène est redessinée à chaque réglage (bouton Annuler pour revenir). Dans la vue 3D on tourne et on zoome, mais on ne modifie rien à la souris.
 - En haut : dimensions en grand, hauteur, surface, nombre de praticables, escaliers, garde-corps et poids.
 - Documents : pour le client (récapitulatif, image, lien de la scène qui s'ouvre en mode Simple), pour le montage (liste du matériel lisible, plan de montage, estimation de prix).

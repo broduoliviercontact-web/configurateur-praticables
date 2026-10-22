@@ -1,4 +1,5 @@
-// Projets en ligne : stockage Vercel Blob (store relié au projet Vercel, variable BLOB_READ_WRITE_TOKEN).
+// Projets en ligne : stockage Vercel Blob privé, relié au projet Vercel (BLOB_STORE_ID + OIDC, ou BLOB_READ_WRITE_TOKEN).
+// Store public : ajouter la variable BLOB_ACCESS=public.
 // Un fichier par projet (projects/<id>.json) + un index (projects/index.json) pour la liste.
 // Écritures conditionnelles (ETag) : un projet modifié ailleurs entre-temps renvoie 409 au lieu d'être écrasé.
 import { put, get, del, BlobPreconditionFailedError, BlobNotFoundError } from "@vercel/blob";
@@ -82,7 +83,8 @@ export default async function handler(req, res) {
     res.setHeader("Allow", "GET, PUT, DELETE");
     return send(res, 405, { error: "méthode non prise en charge" });
   } catch (e) {
-    const missing = !process.env.BLOB_READ_WRITE_TOKEN;
+    // le stockage relié au projet fournit BLOB_STORE_ID (accès OIDC, par défaut) et/ou BLOB_READ_WRITE_TOKEN
+    const missing = !process.env.BLOB_STORE_ID && !process.env.BLOB_READ_WRITE_TOKEN;
     return send(res, missing ? 503 : 500, { error: missing ? "stockage en ligne non configuré" : "erreur du stockage en ligne" });
   }
 }

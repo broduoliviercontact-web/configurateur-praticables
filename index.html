@@ -471,6 +471,13 @@ label.ck.multi-sel{display:none}
       <label class="f">Laize coton gratté (m)
         <input class="num" id="jupL" type="number" inputmode="decimal" min="0.5" max="4" step="0.05" value="1.3">
       </label>
+      <label class="f">Longueur des Vauban
+        <select id="vbP">
+          <option value="2">2,00 m</option>
+          <option value="2.2">2,20 m (HERMEQ MB0033)</option>
+          <option value="2.5">2,50 m</option>
+        </select>
+      </label>
       <label class="f">Coton gratté sur les Vauban
         <select id="vbF">
           <option value="0">Aucun</option>
@@ -709,20 +716,20 @@ const SITE="https://configurateur-praticables.vercel.app/", SALLE="https://salle
 const fmt=(n,d=2)=>n.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:2});
 
 /* ================= État & historique ================= */
-const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null,done:{},moq:"none",moqW:2,jupA:1,jupL:1.3,bars:[],vbF:0,vbA:1,vbH:1.1,devis:defaultDevis(),versions:[],annos:[]});
+const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,skirt:"front",cart:8,link:null,done:{},moq:"none",moqW:2,jupA:1,jupL:1.3,bars:[],vbP:2.2,vbF:0,vbA:1,vbH:1.1,devis:defaultDevis(),versions:[],annos:[]});
 const defaultDevis=()=>({rem:0,tr:"auto",ov:{},liv:"",rep:"",lieu:"Les Grandes Serres de Pantin"});
 let S=defaultS(), curPid=null, pendingLink=null;
 let firstRun=false, selStair=null;
 let tool="sel", curRef="PRI-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, showDims=true, multi=false;
 let sel=new Set(), hist=[], fut=[];
-const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name,skirt:S.skirt,cart:S.cart,moq:S.moq,moqW:S.moqW,jupA:S.jupA,jupL:S.jupL,bars:S.bars,vbF:S.vbF,vbA:S.vbA,vbH:S.vbH,annos:S.annos});
+const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name,skirt:S.skirt,cart:S.cart,moq:S.moq,moqW:S.moqW,jupA:S.jupA,jupL:S.jupL,bars:S.bars,vbP:S.vbP,vbF:S.vbF,vbA:S.vbA,vbH:S.vbH,annos:S.annos});
 function restore(js){ Object.assign(S,JSON.parse(js)); sel=new Set([...sel].filter(id=>S.plats.some(p=>p.id===id))); syncInputs(); }
 function syncInputs(){
   const hs=document.getElementById("height"), gm=document.getElementById("gcMode");
   if(hs) hs.value=String(S.H); if(gm) gm.value=S.gc;
   const sk=document.getElementById("skirtMode"), ct=document.getElementById("cartCap"), pn2=document.getElementById("pName");
   if(sk) sk.value=S.skirt; if(ct) ct.value=S.cart;
-  for(const [id,v] of [["moqMode",S.moq],["moqW",S.moqW],["jupA",S.jupA],["jupL",S.jupL],["vbF",S.vbF],["vbA",S.vbA],["vbH",S.vbH]]){ const el=document.getElementById(id); if(el&&document.activeElement!==el) el.value=v; } if(pn2&&document.activeElement!==pn2) pn2.value=S.name||"";
+  for(const [id,v] of [["vbP",S.vbP],["moqMode",S.moq],["moqW",S.moqW],["jupA",S.jupA],["jupL",S.jupL],["vbF",S.vbF],["vbA",S.vbA],["vbH",S.vbH]]){ const el=document.getElementById(id); if(el&&document.activeElement!==el) el.value=v; } if(pn2&&document.activeElement!==pn2) pn2.value=S.name||"";
   const pn=document.getElementById("projName"); if(pn) pn.textContent=S.name||"Préparation de montage";
 }
 function pushHist(pre){ hist.push(pre??snap()); if(hist.length>150) hist.shift(); fut=[]; }
@@ -765,7 +772,7 @@ function sanitize(d){
   o.H=HEIGHTS.includes(+o.H)?+o.H:1.0; o.gc=["kit","sep","none"].includes(o.gc)?o.gc:"kit";
   o.skirt=["none","front","visible","all"].includes(o.skirt)?o.skirt:"front"; o.cart=Math.min(40,Math.max(1,Math.round(num(o.cart))||8));
   o.moq=o.moq==="on"?"on":"none"; o.moqW=Math.min(6,Math.max(0.5,num(o.moqW)||2)); o.jupA=[1,1.5,2,2.5].includes(+o.jupA)?+o.jupA:1; o.jupL=Math.min(4,Math.max(0.5,num(o.jupL)||1.3));
-  o.vbF=[0,1,2].includes(+o.vbF)?+o.vbF:0; o.vbA=[1,1.5,2,2.5].includes(+o.vbA)?+o.vbA:1; o.vbH=Math.min(1.2,Math.max(0.3,num(o.vbH)||1.1));
+  o.vbP=[2,2.2,2.5].includes(+o.vbP)?+o.vbP:2.2; o.vbF=[0,1,2].includes(+o.vbF)?+o.vbF:0; o.vbA=[1,1.5,2,2.5].includes(+o.vbA)?+o.vbA:1; o.vbH=Math.min(1.2,Math.max(0.3,num(o.vbH)||1.1));
   { const okP=q=>Array.isArray(q)&&q.length===2&&q.every(v=>Number.isFinite(+v)&&Math.abs(+v)<=POS_MAX*C), P=q=>[+(+q[0]).toFixed(3),+(+q[1]).toFixed(3)];
     o.annos=(Array.isArray(o.annos)?o.annos:[]).slice(0,200).filter(a=>a&&(a.t==="c"&&okP(a.a)&&okP(a.b)||a.t==="n"&&okP(a.p)&&typeof a.txt==="string"))
       .map(a=>a.t==="c"?{t:"c",a:P(a.a),b:P(a.b)}:{t:"n",p:P(a.p),txt:a.txt.slice(0,120)}); }
@@ -920,7 +927,7 @@ function carpetPlan(W=S.moqW){
 /* coton gratté autour des Vauban : longueur des lignes × faces habillées, hauteur habillée depuis le sol (1,10 m = barrière entière),
    même règle de laize que la jupe ; fixations : colliers, ≈ 4 par barrière et par face (haut et bas aux 2 montants) — à valider */
 function vaubanCotton(){ if(!S.vbF) return null; let len=0, n=0;
-  for(const b of S.bars) if(b.k==="vauban"){ for(let i=1;i<b.pts.length;i++){ const L=Math.hypot(b.pts[i][0]-b.pts[i-1][0],b.pts[i][1]-b.pts[i-1][1]); len+=Math.max(1,Math.round(L/VAUBAN_PITCH))*VAUBAN_PITCH; } }
+  for(const b of S.bars) if(b.k==="vauban"){ for(let i=1;i<b.pts.length;i++){ const L=Math.hypot(b.pts[i][0]-b.pts[i-1][0],b.pts[i][1]-b.pts[i-1][1]); len+=Math.max(1,Math.round(L/vbPitch()))*vbPitch(); } }
   for(const b of S.bars) if(b.k==="vauban") n+=barItems(b).filter(i=>i.t==="vauban").length;
   if(!len) return null; const c=cottonFor(S.vbH,len*S.vbF,S.vbA);
   return {...c,len,faces:S.vbF,colliers:n*4*S.vbF}; }
@@ -969,7 +976,7 @@ function bom(R){
     for(const [h,len] of [...sk.byH].sort((a,b)=>a[0]-b[0])){ const c=cottonFor(h,len); row(null,`Coton gratté laize ${fmt(S.jupL,2)} m pour jupe h ${fmt(h)} m (${amp}, ${c.lay}, hors ourlets)`,c.m,0,false,"m"); } }
   const bc=barCounts();
   if(bc.vauban||bc.potelet){ rows.push(["Barrières et potelets"]);
-    if(bc.vauban) row("MB0033","Barrière Vauban à pieds fixes 2,20 m (HERMEQ)",bc.vauban,16,true);
+    if(bc.vauban){ const P=vbPitch(); row(vbRef(P),`Barrière Vauban à pieds fixes ${fmt(P)} m${P===2.2?" (HERMEQ)":""}`,bc.vauban,+(7.3*P).toFixed(1),true); }
     if(bc.potelet) row("REXO100CHC","Potelet à corde inox chromé (VISO)",bc.potelet,6.75);
     if(bc.cordon) row("CI2C","Cordon chanvre torsadé Ø 28 mm, 2 m (VISO)",bc.cordon,0.95);
     const vc=vaubanCotton(); if(vc){ const amp=S.vbA===1?"tendu":`plissé × ${fmt(S.vbA,1)}`;
@@ -1023,7 +1030,7 @@ function parcGroups(){
   return [["Plateaux",PLATEAUX.map(r=>[r.ref,r.nom])],["Pieds",pieds],["Garde-corps",gc],
     ["Fixations et accessoires",[[asd.jonction[0],asd.jonction[1]],["SGC","Support garde-corps"],["SGC 100","Support garde-corps 100 kg"],["C0014","Insert M10 périphérie"],["FGARD","Raccord 2 tubes garde-corps"]]],
     ["Escaliers",ESCALIERS.map(e=>[e.ref,e.nom])],
-    ["Barrières et potelets",[["MB0033","Barrière Vauban 2,20 m (HERMEQ)"],["REXO100CHC","Potelet à corde (VISO)"],["CI2C","Cordon chanvre 2 m (VISO)"]]]];
+    ["Barrières et potelets",[...VB_SIZES.map(P=>[vbRef(P),`Barrière Vauban ${fmt(P)} m`+(P===2.2?" (HERMEQ)":"")]),["REXO100CHC","Potelet à corde (VISO)"],["CI2C","Cordon chanvre 2 m (VISO)"]]]];
 }
 function renderParc(){
   const need=new Map(lastBom.filter(r=>r.length>1&&r[0]&&!r[5]).map(r=>[r[0],r[2]]));
@@ -1154,8 +1161,8 @@ function rebuild(commit){
     const nx=e.o==="d"?e.nx:(e.o==="v"?e.n:0), nz=e.o==="d"?e.nz:(e.o==="h"?e.n:0), len=Math.hypot(x2-x1,z2-z1)*C, hh=Math.max(0.05,e.h-0.1);
     const m=box(len,hh,0.008,M.skirt,(x1+x2)/2*C+nx*0.012,hh/2,(z1+z2)/2*C+nz*0.012); m.rotation.y=-Math.atan2(z2-z1,x2-x1); }
   if(showDims&&S.plats.length&&(!imgMode||showLbl)) groundDims();
-  const tpl={vauban:vaubanParts(),potelet:poteletParts()}; // gabarits partagés par tous les éléments d'un même type
-  const vbCloth=S.vbF?new THREE.BoxGeometry(2.2,S.vbH,0.01):null; // coton gratté : un panneau par barrière et par face
+  const tpl={vauban:vaubanParts(vbPitch()),potelet:poteletParts()}; // gabarits partagés par tous les éléments d'un même type
+  const vbCloth=S.vbF?new THREE.BoxGeometry(vbPitch(),S.vbH,0.01):null; // coton gratté : un panneau par barrière et par face
   S.bars.forEach((b,bi)=>{ for(const it of barItems(b)){
     if(vbCloth&&it.t==="vauban") for(const side of S.vbF===2?[-1,1]:[1]){ const m=new THREE.Mesh(vbCloth,M.skirt); m.position.set(it.x+Math.sin(it.a)*0.035*side,S.vbH/2,it.z+Math.cos(it.a)*0.035*side); m.rotation.y=it.a; m.userData.bar=bi; world.add(m); } const parts=it.t==="cordon"?cordonParts(it.L):tpl[it.t], mtx=new THREE.Matrix4().compose(new THREE.Vector3(it.x,0,it.z),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),it.a),new THREE.Vector3(1,1,1));
     for(const q of parts){ const m=new THREE.Mesh(q.geometry,q.material); m.applyMatrix4(new THREE.Matrix4().multiplyMatrices(mtx,q.matrix.compose(q.position,q.quaternion,q.scale))); m.userData.bar=bi; world.add(m); } } });
@@ -1269,13 +1276,14 @@ function selectAll(){ sel=new Set(S.plats.map(p=>p.id)); setTool("sel"); rebuild
 
 /* ================= Barrières Vauban et potelets à corde (mêmes modèles que Salle 3D) ================= */
 /* Vauban à pieds fixes (fiche HERMEQ MB0033) : cadre 2 175 × 900 mm à 200 mm du sol, pas d'accroche 2,20 m, ≈ 16 kg (estimé).
+   Longueur réglable (2,00 / 2,20 / 2,50 m) : cadre = pas − 2,5 cm, barreaux répartis, poids ≈ 7,3 kg/m (estimé d'après la 2,20 m).
    Potelet VISO REXO100CHC : base Ø 320 mm, 980 mm, 6,75 kg ; cordon VISO CI2C : chanvre Ø 28 mm, 2 m, 0,95 kg, accroché à 0,90 m. */
-const VAUBAN_PITCH=2.2, POT_GAP=2, ROPE_L=2, ROPE_Y=0.9, POT_H=0.98;
+const VB_SIZES=[2,2.2,2.5], vbRef=P=>P===2.2?"MB0033":`VAUBAN ${fmt(P)}`, vbPitch=()=>S.vbP||2.2, POT_GAP=2, ROPE_L=2, ROPE_Y=0.9, POT_H=0.98;
 const ropeSag=S=>{ const s=Math.max(0.05,S-0.06); return s>=ROPE_L?0.01:Math.min(ROPE_Y-0.05,Math.sqrt(3*s*(ROPE_L-s)/8)); };
 const BM={steel:new THREE.MeshStandardMaterial({color:0xb8bcc2,metalness:0.6,roughness:0.4}),chrome:new THREE.MeshStandardMaterial({color:0xe2e6ec,metalness:0.55,roughness:0.28}),
   rubber:new THREE.MeshStandardMaterial({color:0x1a1a1a,roughness:0.9}),rope:new THREE.MeshStandardMaterial({color:0xc8a96e,roughness:0.95})};
-function vaubanParts(){ // origine au sol, cadre le long de x
-  const W=2.175, y0=0.2, H=0.9, Rr=0.12, out=[], v=(x,y)=>new THREE.Vector3(x,y,0), path=new THREE.CurvePath();
+function vaubanParts(P=vbPitch()){ // origine au sol, cadre le long de x ; P = pas d'accroche
+  const W=P-0.025, y0=0.2, H=0.9, Rr=0.12, out=[], v=(x,y)=>new THREE.Vector3(x,y,0), path=new THREE.CurvePath();
   const corner=(cx,cy,a0)=>path.add(new THREE.CatmullRomCurve3(new THREE.EllipseCurve(cx,cy,Rr,Rr,a0,a0+Math.PI/2,false).getPoints(6).map(p=>v(p.x,p.y))));
   const x0=-W/2, x1=W/2, y1=y0+H;
   path.add(new THREE.LineCurve3(v(x0+Rr,y0),v(x1-Rr,y0))); corner(x1-Rr,y0+Rr,-Math.PI/2);
@@ -1283,8 +1291,8 @@ function vaubanParts(){ // origine au sol, cadre le long de x
   path.add(new THREE.LineCurve3(v(x1-Rr,y1),v(x0+Rr,y1))); corner(x0+Rr,y1-Rr,Math.PI/2);
   path.add(new THREE.LineCurve3(v(x0,y1-Rr),v(x0,y0+Rr))); corner(x0+Rr,y0+Rr,Math.PI);
   out.push(new THREE.Mesh(new THREE.TubeGeometry(path,120,0.019,8,true),BM.steel));
-  for(let i=0;i<14;i++){ const b=new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.006,0.82,6),BM.steel); b.position.set(-0.86+i*1.72/13,y0+H/2,0); out.push(b); }
-  for(const x of [-0.78,0.78]) for(const sg of [-1,1]){ const l=new THREE.Mesh(new THREE.CylinderGeometry(0.017,0.017,0.275,8),BM.steel); l.position.set(x,y0-0.097,sg*0.097); l.rotation.x=-sg*Math.PI/4; out.push(l); }
+  const nb=Math.round(14*W/2.175), xb=W/2-0.2475; for(let i=0;i<nb;i++){ const b=new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.006,0.82,6),BM.steel); b.position.set(-xb+i*2*xb/(nb-1),y0+H/2,0); out.push(b); }
+  for(const x of [-(W/2-0.3075),W/2-0.3075]) for(const sg of [-1,1]){ const l=new THREE.Mesh(new THREE.CylinderGeometry(0.017,0.017,0.275,8),BM.steel); l.position.set(x,y0-0.097,sg*0.097); l.rotation.x=-sg*Math.PI/4; out.push(l); }
   for(const y of [0.45,0.95]){ const h=new THREE.Mesh(new THREE.TorusGeometry(0.03,0.006,6,12,Math.PI),BM.steel); h.position.set(W/2+0.03,y,0); h.rotation.z=-Math.PI/2; out.push(h); }
   return out;
 }
@@ -1300,7 +1308,7 @@ function cordonParts(Sp){ const s=Math.max(0.05,Sp-0.06), f=ropeSag(Sp), pts=[];
 /* une ligne (points en mètres, au sol) -> éléments posés : {t:"vauban"|"potelet"|"cordon", x, z, a (cap), L (écart du cordon)} */
 function barItems(b){ const out=[];
   for(let i=1;i<b.pts.length;i++){ const [ax,az]=b.pts[i-1], [bx,bz]=b.pts[i], L=Math.hypot(bx-ax,bz-az); if(L<0.05) continue; const ux=(bx-ax)/L, uz=(bz-az)/L, a=Math.atan2(-uz,ux);
-    if(b.k==="vauban"){ const n=Math.max(1,Math.round(L/VAUBAN_PITCH)), P=L/n; for(let j=0;j<n;j++) out.push({t:"vauban",x:ax+ux*P*(j+0.5),z:az+uz*P*(j+0.5),a}); }
+    if(b.k==="vauban"){ const P=vbPitch(), n=Math.max(1,Math.round(L/P)); for(let j=0;j<n;j++) out.push({t:"vauban",x:ax+ux*P*(j+0.5),z:az+uz*P*(j+0.5),a}); }
     else { const n=Math.max(1,Math.ceil(L/POT_GAP-1e-6)), P=L/n; if(i===1) out.push({t:"potelet",x:ax,z:az,a});
       for(let j=1;j<=n;j++){ out.push({t:"potelet",x:ax+ux*P*j,z:az+uz*P*j,a}); out.push({t:"cordon",x:ax+ux*P*(j-0.5),z:az+uz*P*(j-0.5),a,L:P}); } } }
   return out; }
@@ -1315,7 +1323,7 @@ function endBar(silent){ const had=!!barT.start; barT.start=null; barT.line=null
 function barTarget(e){ const p=onPlane(0); if(!p) return null; const g=[Math.round(p.x/C)*C,Math.round(p.z/C)*C]; if(!barT.start) return {pt:g};
   const [ax,az]=barT.start; let dx=g[0]-ax, dz=g[1]-az, L=Math.hypot(dx,dz); if(L<0.25) return {pt:barT.start,L:0};
   let a=Math.atan2(dz,dx); if(!e.shiftKey) a=Math.round(a/(Math.PI/4))*(Math.PI/4);
-  if(barT.k==="vauban") L=Math.max(1,Math.round(L/VAUBAN_PITCH))*VAUBAN_PITCH; else if(!e.shiftKey) L=Math.max(C,Math.round(L/C)*C);
+  if(barT.k==="vauban") L=Math.max(1,Math.round(L/vbPitch()))*vbPitch(); else if(!e.shiftKey) L=Math.max(C,Math.round(L/C)*C);
   return {pt:[+(ax+Math.cos(a)*L).toFixed(3),+(az+Math.sin(a)*L).toFixed(3)],L}; }
 function barPreview(e){ while(traceG.children.length){ const c=traceG.children.pop(); c.geometry?.dispose(); }
   const t=barTarget(e); if(!t) return; const dot=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.04,16),traceMat);
@@ -1491,7 +1499,7 @@ const HINTS={sel:"Touchez un plateau ou un escalier pour le sélectionner, gliss
   esc:"Touchez un bord libre d'au moins 1 m pour poser un escalier, ou un escalier pour le retirer.",
   bord:"Touchez un bord pour le laisser sans garde-corps (face public, raccord avec une autre structure).",
   eff:"Touchez un plateau, un escalier ou une ligne de barrières pour le retirer.",
-  barr:"Au sol : touchez un point de départ puis chaque point suivant. Vauban : barrières de 2,20 m ; potelets : écart ≤ 2 m réparti, cordon de 2 m. Angles calés à 45° (Maj : libre). Échap ou 2e appui au même endroit pour finir.",
+  barr:"Au sol : touchez un point de départ puis chaque point suivant. Vauban : barrières à la longueur réglée (2,00 / 2,20 / 2,50 m) ; potelets : écart ≤ 2 m réparti, cordon de 2 m. Angles calés à 45° (Maj : libre). Échap ou 2e appui au même endroit pour finir.",
   trace:"Touchez un point de départ, puis chaque point suivant : un tronçon droit de praticables se pose, le suivant repart du bout. Échap ou « Terminer » pour finir."};
 function setTool(t){ if(t!=="trace") endTrace(true); if(t!=="barr") endBar(true); tool=t; const tr=document.getElementById("traceRow"); if(tr){ tr.hidden=t!=="trace"; if(t==="trace") renderTraceW(); } document.getElementById("barRow").hidden=t!=="barr";
   document.querySelectorAll("#tools button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===t));
@@ -1828,6 +1836,7 @@ $("pName").addEventListener("change",()=>save());
 $("skirtMode").onchange=e=>act(()=>{ S.skirt=e.target.value; });
 $("jupA").onchange=e=>act(()=>{ S.jupA=+e.target.value; });
 $("jupL").onchange=e=>act(()=>{ S.jupL=Math.min(4,Math.max(0.5,+e.target.value||1.3)); });
+$("vbP").onchange=e=>act(()=>{ S.vbP=+e.target.value; });
 $("vbF").onchange=e=>act(()=>{ S.vbF=+e.target.value; });
 $("vbA").onchange=e=>act(()=>{ S.vbA=+e.target.value; });
 $("vbH").onchange=e=>act(()=>{ S.vbH=Math.min(1.2,Math.max(0.3,+e.target.value||1.1)); });
@@ -2046,7 +2055,7 @@ function planSvgStr(){
     const mx=(t.a+t.c)/2+t.nx*t.run/2, mz=(t.b+t.d)/2+t.nz*t.run/2;
     o.push(`<rect x="${f(mx-0.36)}" y="${f(mz-0.12)}" width="0.72" height="0.22" rx="0.04" fill="#fff" stroke="${ink}" stroke-width="0.015"/><text x="${f(mx)}" y="${f(mz+0.045)}" text-anchor="middle" font-size="0.14" font-weight="600" fill="${ink}">${t.ref}</text>`); }
   for(const b of S.bars) for(const it of barItems(b)){ const px=it.x-x0*C, pz=it.z-z0*C, ux=Math.cos(it.a), uz=-Math.sin(it.a);
-    if(it.t==="vauban") o.push(`<line x1="${f(px-ux*1.09)}" y1="${f(pz-uz*1.09)}" x2="${f(px+ux*1.09)}" y2="${f(pz+uz*1.09)}" stroke="#6a747e" stroke-width="0.06"/>`);
+    if(it.t==="vauban"){ const hv=(vbPitch()-0.025)/2; o.push(`<line x1="${f(px-ux*hv)}" y1="${f(pz-uz*hv)}" x2="${f(px+ux*hv)}" y2="${f(pz+uz*hv)}" stroke="#6a747e" stroke-width="0.06"/>`); }
     else if(it.t==="potelet") o.push(`<circle cx="${f(px)}" cy="${f(pz)}" r="0.16" fill="#c9ced6" stroke="${ink}" stroke-width="0.02"/>`);
     else o.push(`<line x1="${f(px-ux*it.L/2)}" y1="${f(pz-uz*it.L/2)}" x2="${f(px+ux*it.L/2)}" y2="${f(pz+uz*it.L/2)}" stroke="#a0783c" stroke-width="0.04"/>`); }
   // cotes
@@ -2384,7 +2393,7 @@ function buildDxf(){
     const P=[[X(a),Y(b)],[X(c),Y(d)],[X(c)+nx*run,Y(d)-nz*run],[X(a)+nx*run,Y(b)-nz*run]]; poly("ASD_ESCALIERS",P);
     for(let i=1;i<k;i++){ const t=run*i/k; line("ASD_ESCALIERS",X(a)+nx*t,Y(b)-nz*t,X(c)+nx*t,Y(d)-nz*t); }
     text("ASD_ESCALIERS",(P[0][0]+P[2][0])/2,(P[0][1]+P[2][1])/2,0.14,e?e.ref:"Escalier"); }
-  for(const b of S.bars) for(const it of barItems(b)){ const px=it.x-x0*C, py=-(it.z-z0*C)+D, ux=Math.cos(it.a), uy=Math.sin(it.a), h=it.t==="vauban"?1.0875:it.t==="cordon"?it.L/2:0;
+  for(const b of S.bars) for(const it of barItems(b)){ const px=it.x-x0*C, py=-(it.z-z0*C)+D, ux=Math.cos(it.a), uy=Math.sin(it.a), h=it.t==="vauban"?(vbPitch()-0.025)/2:it.t==="cordon"?it.L/2:0;
     if(it.t==="potelet") put(0,"CIRCLE",8,"ASD_BARRIERES",10,n(px),20,n(py),40,n(0.16)); else line("ASD_BARRIERES",px-ux*h,py-uy*h,px+ux*h,py+uy*h); }
   // cotes et notes libres
   for(const a of S.annos||[]){ if(a.t==="c"){ const ax=a.a[0]-x0*C, ay=-(a.a[1]-z0*C)+D, bx=a.b[0]-x0*C, by=-(a.b[1]-z0*C)+D, L=Math.hypot(bx-ax,by-ay); if(L<1e-6) continue;

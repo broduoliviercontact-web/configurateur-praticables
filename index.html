@@ -408,7 +408,15 @@ label.ck.multi-sel{display:none}
         <div class="sp-step"><h3><i>4</i>Garde-corps</h3>
           <div class="sp-chips sp-col" id="spGc"></div>
         </div>
-        <div class="sp-step"><h3><i>5</i>Finitions</h3>
+        <div class="sp-step"><h3><i>5</i>Barrières devant la scène</h3>
+          <div class="sp-chips sp-col" id="spBar"></div>
+          <div id="spBarOpts">
+            <div class="sp-sub">Distance au bord de la scène</div><div class="sp-chips" id="spBarD"></div>
+            <div class="sp-sub">Longueur d'une barrière Vauban</div><div class="sp-chips" id="spVbP"></div>
+            <div class="sp-res" id="spBarRes"></div>
+          </div>
+        </div>
+        <div class="sp-step"><h3><i>6</i>Finitions</h3>
           <div class="sp-sub">Jupe noire sous le plancher</div><div class="sp-chips" id="spSkirt"></div>
           <div class="sp-res" id="spSkirtRes" hidden></div>
           <div class="sp-sub">Moquette sur le plancher</div><div class="sp-chips" id="spMoq"></div>
@@ -416,7 +424,7 @@ label.ck.multi-sel{display:none}
           <div class="sp-sub">Utilisation</div><div class="sp-chips" id="spUse"></div>
         </div>
       </div>
-      <div class="sp-step sp-docs"><h3><i>6</i>Documents</h3>
+      <div class="sp-step sp-docs"><h3><i>7</i>Documents</h3>
         <label class="sp-f">Nom de la scène, repris sur les documents<input class="txt sp-name" id="spName" type="text" maxlength="80" autocomplete="off" placeholder="Ex. Concert du 5 décembre"></label>
         <div class="sp-sub">Pour le client</div>
         <div class="sp-btns"><button type="button" class="btn primary" data-doc="client">Récapitulatif client</button><button type="button" class="btn" data-doc="img">Image de la scène</button><button type="button" class="btn" data-doc="share">Copier le lien de la scène</button></div>
@@ -680,7 +688,7 @@ label.ck.multi-sel{display:none}
           <dt>Échap</dt><dd>Désélectionner, ou fermer le plan et l'image</dd>
         </dl>
       </details>
-      <p class="note" style="margin-top:10px">Version du 22 octobre 2026 · métrages</p>
+      <p class="note" style="margin-top:10px">Version du 22 octobre 2026 · barrières</p>
     </section>
     </div>
   </aside>
@@ -834,7 +842,7 @@ function redo(){ if(!fut.length) return; hist.push(snap()); restore(fut.pop()); 
 
 /* scène par défaut : 8 × 8 m en PRI-R21 (ASD 500 kg/m²) à 1 m, face public ouverte, escalier à l'arrière côté droit (vu du public) */
 function sample(){
-  const sp={w:8,d:8,h:1.0,ref:"PRI-R21",gc:"front",stairs:["back-end"],skirt:"front",moq:"none"};
+  const sp={w:8,d:8,h:1.0,ref:"PRI-R21",gc:"front",stairs:["back-end"],skirt:"front",moq:"none",bar:"none",barD:2,vbP:2.2};
   const p=planScene(8,8,"PRI-R21",false);
   S.nid=1; S.H=1.0; S.plats=p.plats.map(q=>({id:S.nid++,...q,h:1.0}));
   S.open=sideKeys("front",p.Wc,p.Dc);
@@ -1211,11 +1219,12 @@ function groundDims(){
   const W=x1-x0, D=z1-z0, sz=Math.min(4.5,Math.max(2.4,Math.max(W,D)*0.38)), y=0.012, th=0.05;
   const seg=(ax,az,bx,bz)=>{ const L=Math.hypot(bx-ax,bz-az), m=new THREE.Mesh(new THREE.BoxGeometry(L,0.01,th),dimMat); m.position.set((ax+bx)/2,y,(az+bz)/2); m.rotation.y=-Math.atan2(bz-az,bx-ax); world.add(m); };
   // ouverture, devant le nez de scène
-  const zf=z1+0.9+out("front"); seg(x0,zf,x1,zf); seg(x0,zf-0.25,x0,zf+0.25); seg(x1,zf-0.25,x1,zf+0.25);
+  const bz=Math.max(0,...S.bars.flatMap(b=>b.pts.map(q=>q[1]-z1))), bx=Math.max(0,...S.bars.flatMap(b=>b.pts.map(q=>q[0]-x1)));
+  const zf=Math.max(z1+0.9+out("front"),z1+bz+0.8); seg(x0,zf,x1,zf); seg(x0,zf-0.25,x0,zf+0.25); seg(x1,zf-0.25,x1,zf+0.25);
   seg(x0,z1+0.1,x0,zf+0.25); seg(x1,z1+0.1,x1,zf+0.25);
   bigLabel(`Ouverture ${fmt(W,W%1?1:0)} m`,(x0+x1)/2,zf+sz*0.18,sz);
   // profondeur, sur le côté droit (vu du public)
-  const xr=x1+0.9+out("right"); seg(xr,z0,xr,z1); seg(xr-0.25,z0,xr+0.25,z0); seg(xr-0.25,z1,xr+0.25,z1);
+  const xr=Math.max(x1+0.9+out("right"),x1+bx+0.8); seg(xr,z0,xr,z1); seg(xr-0.25,z0,xr+0.25,z0); seg(xr-0.25,z1,xr+0.25,z1);
   seg(x1+0.1,z0,xr+0.25,z0); seg(x1+0.1,z1,xr+0.25,z1);
   bigLabel(`Profondeur ${fmt(D,D%1?1:0)} m`,xr+sz*0.55,(z0+z1)/2,sz);
 }
@@ -2622,22 +2631,35 @@ function simpleClean(v){ if(!v||typeof v!=="object") return null; const n=x=>Num
   return {w:Math.min(40,Math.max(1,Math.round(n(v.w)*2)/2||8)),d:Math.min(40,Math.max(1,Math.round(n(v.d)*2)/2||4)),h:HEIGHTS.includes(+v.h)?+v.h:1.0,
     ref:["PRI-R21","PRA-R21"].includes(v.ref)?v.ref:"PRI-R21",gc:["front","all","none"].includes(v.gc)?v.gc:"front",
     stairs:(Array.isArray(v.stairs)?v.stairs:[]).filter(id=>SP_STAIRS.some(o=>o[0]===id)),skirt:["none","front","visible","all"].includes(v.skirt)?v.skirt:"front",
-    moq:v.moq==="on"?"on":"none",sig:typeof v.sig==="string"?v.sig.slice(0,24):""}; }
+    moq:v.moq==="on"?"on":"none",bar:["none","front","sides"].includes(v.bar)?v.bar:"none",barD:[1,1.5,2,3].includes(+v.barD)?+v.barD:2,
+    vbP:VB_SIZES.includes(+v.vbP)?+v.vbP:(S&&VB_SIZES.includes(+S.vbP)?+S.vbP:2.2),sig:typeof v.sig==="string"?v.sig.slice(0,24):""}; }
 /* empreinte de la scène : différente dès qu'on l'a retouchée en mode Expert */
-function sceneSig(){ const t=JSON.stringify([S.plats.map(p=>[p.ref,p.x,p.z,p.rot,p.h]).sort(),[...S.open].sort(),S.stairs.map(q=>[q.o,q.line,q.a,q.n]).sort(),S.gc,S.skirt,S.moq]);
+function sceneSig(){ const t=JSON.stringify([S.plats.map(p=>[p.ref,p.x,p.z,p.rot,p.h]).sort(),[...S.open].sort(),S.stairs.map(q=>[q.o,q.line,q.a,q.n]).sort(),S.gc,S.skirt,S.moq,...(S.bars.length?[S.bars,S.vbP]:[])]);
   let h=2166136261; for(let i=0;i<t.length;i++){ h^=t.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36)+t.length.toString(36); }
 const simpleCustom=()=>!S.simple||S.simple.sig!==sceneSig();
+/* barrières Vauban devant la scène : ligne parallèle au nez de scène, longueur au pas des barrières, centrée ;
+   « fermée sur les côtés » : retours vers la scène, à 50 cm au moins des bords. Reculée si un escalier avant dépasse. */
+const SP_BAR=[["none","Non"],["front","Oui, une ligne devant","parallèle au bord de la scène"],["sides","Oui, fermée sur les côtés","la ligne revient vers la scène des deux côtés"]];
+function simpleBarDist(p){ const fr=p.stairs.includes("front-mid")?0.26*Math.max(2,Math.ceil(p.h/0.2))+0.8:0; return Math.max(p.barD,fr); }
+function simpleBars(p,W,D){
+  if(p.bar==="none") return [];
+  const P=p.vbP, dist=simpleBarDist(p), n=Math.ceil((W+(p.bar==="sides"?1:0))/P-1e-9), L=n*P, xl=+(W/2-L/2).toFixed(3), xr=+(W/2+L/2).toFixed(3), zf=+(D+dist).toFixed(3);
+  if(p.bar==="front") return [{k:"vauban",pts:[[xl,zf],[xr,zf]]}];
+  const back=+(zf-Math.max(1,Math.round(dist/P))*P).toFixed(3);
+  return [{k:"vauban",pts:[[xl,back],[xl,zf],[xr,zf],[xr,back]]}];
+}
 /* réglages déduits d'une scène dessinée en mode Expert */
 function simpleGuess(){ if(!S.plats.length) return simpleClean({});
   const {x0,z0,x1,z1}=planData(), hs=S.plats.map(p=>p.h), h=hs.sort((a,b)=>hs.filter(v=>v===b).length-hs.filter(v=>v===a).length)[0];
-  return simpleClean({w:(x1-x0)*C,d:(z1-z0)*C,h,ref:S.plats.some(p=>p.ref.startsWith("PRA"))?"PRA-R21":"PRI-R21",gc:S.gc==="none"?"none":S.open.length?"front":"all",stairs:[],skirt:S.skirt,moq:S.moq}); }
+  return simpleClean({w:(x1-x0)*C,d:(z1-z0)*C,h,ref:S.plats.some(p=>p.ref.startsWith("PRA"))?"PRA-R21":"PRI-R21",gc:S.gc==="none"?"none":S.open.length?"front":"all",stairs:[],skirt:S.skirt,moq:S.moq,bar:"none",vbP:S.vbP}); }
 function simpleBuild(p){
   const plan=planScene(p.w,p.d,p.ref,true); S.nid=1;
   S.plats=plan.plats.map(q=>({id:S.nid++,...q,h:p.h})); S.H=p.h;
   S.gc=p.gc==="none"?"none":(S.gc==="sep"?"sep":"kit");
   S.open=p.gc==="front"?sideKeys("front",plan.Wc,plan.Dc):[];
   S.stairs=stairsFromSlots(new Set(p.stairs),plan.Wc,plan.Dc).stairs;
-  S.skirt=p.skirt; S.moq=p.moq; S.annos=[];
+  S.skirt=p.skirt; S.moq=p.moq; S.annos=[]; S.vbP=p.vbP;
+  S.bars=simpleBars(p,plan.Wc*C,plan.Dc*C);
   S.simple={...p,sig:""};
 }
 function simpleSet(patch){
@@ -2656,7 +2678,7 @@ function renderSimple(){
   $("spHero").innerHTML=S.plats.length?`<div class="big">${fmt(W,W%1?1:0)} × ${fmt(D,D%1?1:0)}<small>m</small></div>
     <div class="line">${hs.length>1?`plancher à ${hs.map(h=>fmt(h)).join(" et ")} m`:`plancher à ${fmt(hs[0])} m du sol`}, ${fmt(T.surf,T.surf%1?1:0)} m²</div>
     <div class="meta">${S.plats.length} praticables, ${R.stairs.length?`${R.stairs.length} escalier${R.stairs.length>1?"s":""}`:"pas d'escalier"}, ${R.pieces.length?`${R.pieces.length} garde-corps`:"pas de garde-corps"}<br>Poids du matériel ${T.est?"environ ":""}${kgTxt(T.kg)} kg${(()=>{ const sk=skirtInfo(R), mq=S.moq==="on"?carpetPlan():null, o=[];
-      if(sk.len) o.push(`jupe ${fmt(Math.ceil(sk.len*2-1e-9)/2,sk.len%1?1:0)} m`); if(mq) o.push(`moquette ${fmt(mq.m,mq.m%1?1:0)} m`); return o.length?`<br>${o.join(", ")}`:""; })()}</div>`
+      if(sk.len) o.push(`jupe ${fmt(Math.ceil(sk.len*2-1e-9)/2,sk.len%1?1:0)} m`); if(mq) o.push(`moquette ${fmt(mq.m,mq.m%1?1:0)} m`); const nv=barCounts().vauban; if(nv) o.push(`${nv} barrières Vauban`); return o.length?`<br>${o.join(", ")}`:""; })()}</div>`
     :`<div class="line">Choisis une taille pour commencer.</div>`;
   $("spCustom").hidden=!custom;
   if(document.activeElement!==$("spName")) $("spName").value=S.name||"";
@@ -2674,6 +2696,10 @@ function renderSimple(){
       +`<b>${m1(tissu)} m</b><span>de coton gratté noir<small>laize ${fmt(S.jupL)} m, ${amp}, hors ourlets</small></span>`; }
   const mq=S.moq==="on"&&S.plats.length?carpetPlan():null; $("spMoqRes").hidden=!mq;
   if(mq) $("spMoqRes").innerHTML=`<b>${m1(mq.m)} m</b><span>de moquette en laize ${fmt(mq.W)} m<small>${mq.n} lé${mq.n>1?"s":""} dans le sens de l'${mq.sens}, pour ${fmt(mq.area,mq.area%1?1:0)} m² de plancher (chutes ${Math.round(mq.waste*100)} %)</small></span>`;
+  chips("spBar",SP_BAR,p.bar,"bar"); $("spBarOpts").hidden=p.bar==="none";
+  chips("spBarD",[[1,"1 m"],[1.5,"1,5 m"],[2,"2 m"],[3,"3 m"]],p.barD,"bard"); chips("spVbP",VB_SIZES.map(v=>[v,`${fmt(v)} m`]),p.vbP,"vbp");
+  if(p.bar!=="none"){ const bc=barCounts(), vl=S.bars.reduce((t,b)=>t+barItems(b).filter(i=>i.t==="vauban").length,0)*p.vbP, dd=simpleBarDist(p);
+    $("spBarRes").innerHTML=`<b>${bc.vauban}</b><span>barrières Vauban de ${fmt(p.vbP)} m<small>${fmt(vl,vl%1?1:0)} m de barrières, ligne à ${fmt(dd,dd%1?1:0)} m du bord de la scène${dd>p.barD?" (reculée pour laisser passer l'escalier avant)":""}</small></span>`; }
   chips("spGc",SP_GC,p.gc,"gc"); chips("spSkirt",SP_SKIRT,p.skirt,"skirt"); chips("spMoq",[["none","Non"],["on","Oui"]],p.moq,"moq"); chips("spUse",SP_USE,p.ref,"use");
 }
 function setMode(m,store=true){
@@ -2691,6 +2717,7 @@ $("simplePanel").addEventListener("click",e=>{ const b=e.target.closest("button"
   if(d.size){ const [w,dd]=d.size.split("x").map(Number); simpleSet({w,d:dd}); return; }
   if(d.h) return simpleSet({h:+d.h});
   if(d.stair){ const st=simpleCustom()?[]:[...cur.stairs]; const i=st.indexOf(d.stair); i>=0?st.splice(i,1):st.push(d.stair); return simpleSet({stairs:st}); }
+  if(d.bar) return simpleSet({bar:d.bar}); if(d.bard) return simpleSet({barD:+d.bard}); if(d.vbp) return simpleSet({vbP:+d.vbp});
   if(d.gc) return simpleSet({gc:d.gc}); if(d.skirt) return simpleSet({skirt:d.skirt}); if(d.moq) return simpleSet({moq:d.moq}); if(d.use) return simpleSet({ref:d.use});
   if(d.doc) simpleDoc(d.doc);
 });

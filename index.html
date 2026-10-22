@@ -199,6 +199,9 @@ body.simple .hint,body.simple #hInfo{display:none}
 .sp-chips button:hover{border-color:var(--muted)}
 .sp-chips button[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel));box-shadow:inset 0 0 0 1px var(--accent)}
 .sp-chips button small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.sp-chips button.ic{display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px}
+.sp-ic{flex:0 0 auto;width:52px;height:44px;color:var(--ink);border-radius:7px;background:var(--bg)}
+#spStairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 .sp-chips button:disabled{opacity:.4;cursor:default}
 .sp-help{font-size:12.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}
 .sp-sub{font-size:13px;color:var(--muted);margin:12px 0 0}
@@ -688,7 +691,7 @@ label.ck.multi-sel{display:none}
           <dt>Échap</dt><dd>Désélectionner, ou fermer le plan et l'image</dd>
         </dl>
       </details>
-      <p class="note" style="margin-top:10px">Version du 22 octobre 2026 · barrières</p>
+      <p class="note" style="margin-top:10px">Version du 22 octobre 2026 · schémas</p>
     </section>
     </div>
   </aside>
@@ -2669,7 +2672,21 @@ function simpleSet(patch){
   const auto=!S.name||/^(Scène|Nouvelle scène)( [\d,]+ × [\d,]+ m)?$/.test(S.name);
   act(()=>{ simpleBuild(p); if(auto) S.name=`Scène ${fmt(p.w,p.w%1?1:0)} × ${fmt(p.d,p.d%1?1:0)} m`; }); S.simple.sig=sceneSig(); syncInputs(); save(); if(reframe) fit("3d"); renderSimple();
 }
-function chips(el,items,cur,attr){ $(el).innerHTML=items.map(([v,l,sub])=>`<button type="button" data-${attr}="${v}" aria-pressed="${Array.isArray(cur)?cur.includes(v):String(cur)===String(v)}">${l}${sub?`<small>${sub}</small>`:""}</button>`).join(""); }
+function chips(el,items,cur,attr,icon){ $(el).innerHTML=items.map(([v,l,sub])=>{ const on=Array.isArray(cur)?cur.includes(v):String(cur)===String(v);
+  return `<button type="button" data-${attr}="${v}" aria-pressed="${on}"${icon?' class="ic"':""}>${icon?icon(v,on):""}<span>${l}${sub?`<small>${sub}</small>`:""}</span></button>`; }).join(""); }
+/* schémas vus du dessus : scène au centre, public en bas (rangée de points), élément choisi en jaune ; couleurs en style (var() ne marche pas dans les attributs SVG) */
+function spSvg(inner){ return `<svg class="sp-ic" viewBox="0 0 48 40" aria-hidden="true"><rect x="10" y="7" width="28" height="17" rx="1.5" style="fill:color-mix(in srgb,currentColor 12%,transparent);stroke:currentColor;stroke-opacity:.55;stroke-width:1"/>${inner}`
+  +[6,13,20,27,34,41].map(x=>`<circle cx="${x}" cy="37" r="1.6" style="fill:currentColor;fill-opacity:.45"/>`).join("")+`</svg>`; }
+const spCol=on=>on?"var(--accent)":"currentColor";
+function stairIcon(v,on){ const c=spCol(on), o=on?1:.45, ln=`stroke:${c};stroke-opacity:${o};stroke-width:.8`,
+    st=(x,y,w,h,vert)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" style="fill:${c};fill-opacity:${on?.9:.25};stroke:${c};stroke-opacity:${o};stroke-width:1"/>`
+    +[1,2].map(i=>vert?`<line x1="${x+w*i/3}" y1="${y}" x2="${x+w*i/3}" y2="${y+h}" style="${ln}"/>`:`<line x1="${x}" y1="${y+h*i/3}" x2="${x+w}" y2="${y+h*i/3}" style="${ln}"/>`).join("");
+  return spSvg({"front-mid":st(19,24,10,6),"back-a0":st(12,1,9,6),"back-end":st(27,1,9,6),"left-mid":st(3,11,7,9,true),"right-mid":st(38,11,7,9,true)}[v]||""); }
+function gcIcon(v,on){ const c=spCol(on), L=(x1,y1,x2,y2,d)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke:${d?"currentColor":c};stroke-opacity:${d?.4:on?1:.6};stroke-width:${d?1:2.4};stroke-linecap:round${d?";stroke-dasharray:2 2":""}"/>`;
+  if(v==="none") return spSvg("");
+  return spSvg(L(10,7,38,7)+L(10,7,10,24)+L(38,7,38,24)+(v==="all"?L(10,24,38,24):L(10,24,38,24,true))); }
+function barIcon(v,on){ const st=`style="fill:none;stroke:${spCol(on)};stroke-opacity:${on?1:.6};stroke-width:2;stroke-dasharray:4 1.5;stroke-linejoin:round"`;
+  return spSvg(v==="front"?`<line x1="6" y1="30" x2="42" y2="30" ${st}/>`:v==="sides"?`<polyline points="5,20 5,30 43,30 43,20" ${st}/>`:""); }
 function renderSimple(){
   if(!simpleMode||!$("simplePanel")) return;
   const custom=simpleCustom(), p=custom?simpleGuess():S.simple, T=lastTot||totals();
@@ -2685,7 +2702,7 @@ function renderSimple(){
   if(document.activeElement!==$("spW")) $("spW").value=p.w; if(document.activeElement!==$("spD")) $("spD").value=p.d;
   chips("spSizes",SP_SIZES.map(([w,d])=>[`${w}x${d}`,`${w} × ${d} m`]),custom?"":`${p.w}x${p.d}`,"size");
   chips("spH",[...SP_HEIGHTS.map(h=>[h,`${fmt(h)} m`]),...(SP_HEIGHTS.includes(p.h)?[]:[[p.h,`${fmt(p.h)} m`]])],p.h,"h");
-  chips("spStairs",SP_STAIRS,custom?[]:p.stairs,"stair");
+  chips("spStairs",SP_STAIRS,custom?[]:p.stairs,"stair",stairIcon);
   const noEsc=!escFor(p.h); $("spStairsHelp").textContent=noEsc?`Pas d'escalier en catalogue pour ${fmt(p.h)} m : il sera à commander sur mesure.`:"Gauche et droite vus depuis le public. Touche à nouveau pour retirer.";
   // métrages : jupe (longueur, tissu) et moquette, d'après la scène affichée
   const sk=skirtInfo(R), m1=v=>fmt(v,v%1?1:0);
@@ -2696,11 +2713,11 @@ function renderSimple(){
       +`<b>${m1(tissu)} m</b><span>de coton gratté noir<small>laize ${fmt(S.jupL)} m, ${amp}, hors ourlets</small></span>`; }
   const mq=S.moq==="on"&&S.plats.length?carpetPlan():null; $("spMoqRes").hidden=!mq;
   if(mq) $("spMoqRes").innerHTML=`<b>${m1(mq.m)} m</b><span>de moquette en laize ${fmt(mq.W)} m<small>${mq.n} lé${mq.n>1?"s":""} dans le sens de l'${mq.sens}, pour ${fmt(mq.area,mq.area%1?1:0)} m² de plancher (chutes ${Math.round(mq.waste*100)} %)</small></span>`;
-  chips("spBar",SP_BAR,p.bar,"bar"); $("spBarOpts").hidden=p.bar==="none";
+  chips("spBar",SP_BAR,p.bar,"bar",barIcon); $("spBarOpts").hidden=p.bar==="none";
   chips("spBarD",[[1,"1 m"],[1.5,"1,5 m"],[2,"2 m"],[3,"3 m"]],p.barD,"bard"); chips("spVbP",VB_SIZES.map(v=>[v,`${fmt(v)} m`]),p.vbP,"vbp");
   if(p.bar!=="none"){ const bc=barCounts(), vl=S.bars.reduce((t,b)=>t+barItems(b).filter(i=>i.t==="vauban").length,0)*p.vbP, dd=simpleBarDist(p);
     $("spBarRes").innerHTML=`<b>${bc.vauban}</b><span>barrières Vauban de ${fmt(p.vbP)} m<small>${fmt(vl,vl%1?1:0)} m de barrières, ligne à ${fmt(dd,dd%1?1:0)} m du bord de la scène${dd>p.barD?" (reculée pour laisser passer l'escalier avant)":""}</small></span>`; }
-  chips("spGc",SP_GC,p.gc,"gc"); chips("spSkirt",SP_SKIRT,p.skirt,"skirt"); chips("spMoq",[["none","Non"],["on","Oui"]],p.moq,"moq"); chips("spUse",SP_USE,p.ref,"use");
+  chips("spGc",SP_GC,p.gc,"gc",gcIcon); chips("spSkirt",SP_SKIRT,p.skirt,"skirt"); chips("spMoq",[["none","Non"],["on","Oui"]],p.moq,"moq"); chips("spUse",SP_USE,p.ref,"use");
 }
 function setMode(m,store=true){
   simpleMode=m==="simple"; document.body.classList.toggle("simple",simpleMode);

@@ -183,6 +183,10 @@ body.simple .hint,body.simple #hInfo{display:none}
 .sp-hero .big small{font-size:26px;font-weight:600;color:var(--muted);margin-left:4px}
 .sp-hero .line{font-size:15px;margin-top:6px}
 .sp-hero .meta{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5}
+.sp-toggle{display:flex;align-items:center;gap:10px;width:100%;margin:12px 0 2px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font:500 14px var(--f-body);cursor:pointer;min-height:44px;text-align:left}
+.sp-toggle svg{width:30px;height:20px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.4;opacity:.7}
+.sp-toggle[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel));box-shadow:inset 0 0 0 1px var(--accent)}
+.sp-toggle[aria-pressed="true"] svg{stroke:var(--accent);opacity:1}
 .sp-step{padding:14px 0;border-bottom:1px solid var(--line)}
 .sp-step h3{display:flex;align-items:center;gap:10px;margin:0 0 10px;font:600 16px var(--f-body)}
 .sp-step h3 i{font-style:normal;flex:0 0 26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:700 14px var(--f-display)}
@@ -391,6 +395,7 @@ label.ck.multi-sel{display:none}
 
     <section id="simplePanel" aria-label="Réglages de la scène">
       <div class="sp-hero" id="spHero"></div>
+      <button type="button" class="sp-toggle" id="spOutline" aria-pressed="false"><svg viewBox="0 0 24 16" aria-hidden="true"><rect x="1" y="1" width="10" height="6" rx=".5"/><rect x="13" y="1" width="10" height="6" rx=".5"/><rect x="1" y="9" width="10" height="6" rx=".5"/><rect x="13" y="9" width="10" height="6" rx=".5"/></svg><span>Délimiter chaque praticable</span></button>
       <div class="sp-steps">
         <p class="sp-custom" id="spCustom" hidden>Cette scène a été dessinée ou retouchée en mode Expert. Tu peux sortir ses documents tels quels ; changer un réglage ci-dessous la redessine entièrement (bouton Annuler pour revenir).</p>
         <div class="sp-step"><h3><i>1</i>Taille</h3>
@@ -691,7 +696,7 @@ label.ck.multi-sel{display:none}
           <dt>Échap</dt><dd>Désélectionner, ou fermer le plan et l'image</dd>
         </dl>
       </details>
-      <p class="note" style="margin-top:10px">Version du 22 octobre 2026 · schémas</p>
+      <p class="note" style="margin-top:10px">Version du 4 novembre 2026</p>
     </section>
     </div>
   </aside>
@@ -826,7 +831,7 @@ const defaultS=()=>({H:1.0,gc:"kit",name:"",plats:[],open:[],stairs:[],nid:1,ski
 const defaultDevis=()=>({rem:0,tr:"auto",ov:{},liv:"",rep:"",lieu:"Les Grandes Serres de Pantin"});
 let S=defaultS(), curPid=null, pendingLink=null;
 let firstRun=false, selStair=null;
-let tool="sel", curRef="PRI-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, showDims=true, multi=false;
+let tool="sel", curRef="PRI-R21", curRot=0, brand="ASD", showLegs=true, showLbl=true, showDims=true, showOutline=(()=>{ try{ return localStorage.getItem("praticables-contours")==="1"; }catch(e){ return false; } })(), multi=false;
 let sel=new Set(), hist=[], fut=[];
 const snap=()=>JSON.stringify({plats:S.plats,open:S.open,stairs:S.stairs,nid:S.nid,H:S.H,gc:S.gc,name:S.name,skirt:S.skirt,cart:S.cart,moq:S.moq,moqW:S.moqW,jupA:S.jupA,jupL:S.jupL,bars:S.bars,vbP:S.vbP,vbF:S.vbF,vbA:S.vbA,vbH:S.vbH,annos:S.annos,simple:S.simple});
 function restore(js){ Object.assign(S,JSON.parse(js)); sel=new Set([...sel].filter(id=>S.plats.some(p=>p.id===id))); syncInputs(); }
@@ -1241,16 +1246,49 @@ function label(text,x,y,z){
 }
 
 let R=null, dragBad=false;
+/* contour de chaque praticable : liseré clair légèrement en retrait des bords, et teintes alternées
+   (deux praticables qui se touchent n'ont jamais la même teinte) */
+const outlineMat=new THREE.MeshBasicMaterial({color:0xf4f6f8});
+const tintMats=[0,1,2].map(()=>new THREE.MeshStandardMaterial({roughness:0.85,side:THREE.DoubleSide}));
+function deckOutline(abs,cx,cz,h){
+  const pts=abs.map(([x,z])=>{ const dx=cx-x, dz=cz-z, l=Math.hypot(dx,dz)||1, k=0.035/C/l; return [(x+dx*k)*C,(z+dz*k)*C]; });
+  for(let i=0;i<pts.length;i++){ const [ax,az]=pts[i], [bx,bz]=pts[(i+1)%pts.length], L=Math.hypot(bx-ax,bz-az); if(L<1e-6) continue;
+    const m=new THREE.Mesh(new THREE.BoxGeometry(L+0.03,0.012,0.03),outlineMat); m.position.set((ax+bx)/2,h+0.007,(az+bz)/2); m.rotation.y=-Math.atan2(bz-az,bx-ax); world.add(m); }
+}
+function deckTints(){
+  const base=M.deck.color; tintMats.forEach((m,i)=>{ m.color.copy(base).offsetHSL(0,0,[0,0.07,-0.05][i]); });
+  const L=R.L, edges=L.map(({g})=>g.abs.map((v,i)=>[v,g.abs[(i+1)%g.abs.length]])), key=(a,b)=>{ const s=[a.join(","),b.join(",")].sort(); return s.join("|"); };
+  // côtés communs : mêmes extrémités, ou chevauchement sur une même droite
+  const touch=(A,B)=>A.some(([a1,a2])=>B.some(([b1,b2])=>{ if(key(a1,a2)===key(b1,b2)) return true;
+    const ux=a2[0]-a1[0], uz=a2[1]-a1[1], cr=(p)=>ux*(p[1]-a1[1])-uz*(p[0]-a1[0]); if(Math.abs(cr(b1))>1e-6||Math.abs(cr(b2))>1e-6) return false;
+    const len2=ux*ux+uz*uz, t=p=>((p[0]-a1[0])*ux+(p[1]-a1[1])*uz)/len2, t1=t(b1), t2=t(b2); return Math.min(1,Math.max(t1,t2))-Math.max(0,Math.min(t1,t2))>1e-6; }));
+  // voisinage, puis coloration DSATUR à 3 teintes (le plus contraint d'abord), et réparation des rares conflits
+  const n=L.length, adj=L.map(()=>[]);
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) if(touch(edges[i],edges[j])){ adj[i].push(j); adj[j].push(i); }
+  const c=new Array(n).fill(-1), use=[0,0,0];
+  for(let step=0;step<n;step++){
+    let best=-1, bs=-1, bd=-1;
+    for(let i=0;i<n;i++) if(c[i]<0){ const sat=new Set(adj[i].map(j=>c[j]).filter(v=>v>=0)).size; if(sat>bs||(sat===bs&&adj[i].length>bd)){ best=i; bs=sat; bd=adj[i].length; } }
+    const taken=new Set(adj[best].map(j=>c[j])), free=[0,1,2].filter(k=>!taken.has(k)).sort((x,y)=>use[x]-use[y]);
+    c[best]=free.length?free[0]:[0,1,2].sort((x,y)=>adj[best].filter(j=>c[j]===x).length-adj[best].filter(j=>c[j]===y).length)[0]; use[c[best]]++;
+  }
+  for(let round=0;round<20;round++){ let fixed=true;
+    for(let i=0;i<n;i++) if(adj[i].some(j=>c[j]===c[i])){ fixed=false; const k=[0,1,2].sort((x,y)=>adj[i].filter(j=>c[j]===x).length-adj[i].filter(j=>c[j]===y).length)[0]; c[i]=k; }
+    if(fixed) break; }
+  const col=new Map(L.map(({p},i)=>[p.id,c[i]]));
+  return new Map([...col].map(([id,c])=>[id,tintMats[c]]));
+}
 function rebuild(commit){
   R=compute();
   if(commit){ const lost=S.stairs.length-R.stairs.length; // un escalier dont le bord n'est plus libre disparaît : on le dit
     S.stairs=R.stairs.map(({h,...s})=>s); S.open=R.open;
     if(lost>0) setTimeout(()=>toast(`${lost>1?lost+" escaliers retirés":"Escalier retiré"} : son bord n'est plus libre · Ctrl+Z pour revenir`)); }
   while(world.children.length){ const c=world.children.pop(); if(!c.isSprite) c.geometry.dispose(); }
-  const T=0.1;
+  const T=0.1, tint=showOutline?deckTints():null;
   for(const {p,g} of R.L){
     const isSel=sel.has(p.id), b=REF[p.ref].brand;
-    const deckM=isSel?(dragBad?M.deckBad:M.deckSel):(b==="SDX"?M.deckSDX:M.deck);
+    const deckM=isSel?(dragBad?M.deckBad:M.deckSel):tint?tint.get(p.id):(b==="SDX"?M.deckSDX:M.deck);
+    if(showOutline) deckOutline(g.abs,g.cx,g.cz,p.h);
     const m=new THREE.Mesh(deckGeom(g.abs,T),[deckM,isSel?M.frameSel:M.frame]);
     m.rotation.x=-Math.PI/2; m.position.y=p.h-T; m.userData.id=p.id; world.add(m);
     if(showLegs){ for(const [vx,vz] of g.abs){ const dx=g.cx-vx, dz=g.cz-vz, l=Math.hypot(dx,dz), k=0.13/C/l;
@@ -1728,6 +1766,10 @@ document.getElementById("redo").onclick=redo;
 document.getElementById("v3d").onclick=()=>fit("3d");
 document.getElementById("vTop").onclick=()=>fit("top");
 document.getElementById("vLegs").onclick=e=>{showLegs=!showLegs; e.target.textContent=showLegs?"Masquer pieds":"Afficher pieds"; rebuild(false);};
+function setOutline(on){ showOutline=on; const b=document.getElementById("spOutline"); if(b) b.setAttribute("aria-pressed",String(on));
+  try{ localStorage.setItem("praticables-contours",on?"1":"0"); }catch(e){} rebuild(false); }
+document.getElementById("spOutline").onclick=()=>setOutline(!showOutline);
+document.getElementById("spOutline").setAttribute("aria-pressed",String(showOutline));
 document.getElementById("vDims").onclick=e=>{showDims=!showDims; e.target.textContent=showDims?"Masquer cotes au sol":"Afficher cotes au sol"; rebuild(false);};
 document.getElementById("vLbl").onclick=e=>{showLbl=!showLbl; e.target.textContent=showLbl?"Masquer étiquettes":"Afficher étiquettes"; rebuild(false);};
 

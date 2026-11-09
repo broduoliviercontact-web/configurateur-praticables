@@ -187,6 +187,17 @@ body.simple .hint,body.simple #hInfo{display:none}
 .sp-toggle svg{width:30px;height:20px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.4;opacity:.7}
 .sp-toggle[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel));box-shadow:inset 0 0 0 1px var(--accent)}
 .sp-toggle[aria-pressed="true"] svg{stroke:var(--accent);opacity:1}
+.sp-prelist{display:grid;gap:6px}
+.sp-pre{display:grid;grid-template-columns:minmax(0,1fr) auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+.sp-pre.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel))}
+.sp-pre button{border:0;background:transparent;color:var(--ink);cursor:pointer;font:500 14px var(--f-body);text-align:left;padding:9px 12px;min-height:44px}
+.sp-pre button small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.sp-pre .del{color:var(--muted);font-size:13px;padding:0 14px;border-left:1px solid var(--line)}
+.sp-pre .del.ask{color:var(--danger);font-weight:600}
+.sp-pre button:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.sp-presave{width:100%;margin-top:8px;min-height:44px}
+.sp-preform{margin-top:8px}
+.sp-models h3{margin-bottom:8px}
 .sp-step{padding:14px 0;border-bottom:1px solid var(--line)}
 .sp-step h3{display:flex;align-items:center;gap:10px;margin:0 0 10px;font:600 16px var(--f-body)}
 .sp-step h3 i{font-style:normal;flex:0 0 26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:700 14px var(--f-display)}
@@ -398,6 +409,16 @@ label.ck.multi-sel{display:none}
       <button type="button" class="sp-toggle" id="spOutline" aria-pressed="false"><svg viewBox="0 0 24 16" aria-hidden="true"><rect x="1" y="1" width="10" height="6" rx=".5"/><rect x="13" y="1" width="10" height="6" rx=".5"/><rect x="1" y="9" width="10" height="6" rx=".5"/><rect x="13" y="9" width="10" height="6" rx=".5"/></svg><span>Délimiter chaque praticable</span></button>
       <div class="sp-steps">
         <p class="sp-custom" id="spCustom" hidden>Cette scène a été dessinée ou retouchée en mode Expert. Tu peux sortir ses documents tels quels ; changer un réglage ci-dessous la redessine entièrement (bouton Annuler pour revenir).</p>
+        <div class="sp-step sp-models"><h3>Mes modèles</h3>
+          <div class="sp-prelist" id="spPresets"></div>
+          <p class="sp-help" id="spPreInfo"></p>
+          <button type="button" class="btn sp-presave" id="spPreSave">Enregistrer ce réglage comme modèle</button>
+          <div class="sp-preform" id="spPreForm" hidden>
+            <label class="sp-f">Nom du modèle<input class="txt sp-name" id="spPreName" type="text" maxlength="60" autocomplete="off"></label>
+            <p class="sp-help" id="spPreWarn" hidden>Cette scène a été retouchée en mode Expert : le modèle garde ses réglages de base (taille, hauteur, garde-corps, finitions), pas les retouches.</p>
+            <div class="sp-btns"><button type="button" class="btn primary" id="spPreOk">Enregistrer</button><button type="button" class="btn" id="spPreCancel">Annuler</button></div>
+          </div>
+        </div>
         <div class="sp-step"><h3><i>1</i>Taille</h3>
           <div class="sp-dims">
             <label class="sp-f">Largeur, face au public<span class="sp-num"><button type="button" data-step="w" data-d="-1" aria-label="Moins large">−</button><input id="spW" type="number" inputmode="decimal" min="1" max="40" step="0.5"><button type="button" data-step="w" data-d="1" aria-label="Plus large">+</button></span></label>
@@ -696,7 +717,7 @@ label.ck.multi-sel{display:none}
           <dt>Échap</dt><dd>Désélectionner, ou fermer le plan et l'image</dd>
         </dl>
       </details>
-      <p class="note" style="margin-top:10px">Version du 4 novembre 2026</p>
+      <p class="note" style="margin-top:10px">Version du 9 novembre 2026</p>
     </section>
     </div>
   </aside>
@@ -2742,6 +2763,7 @@ function renderSimple(){
   $("spCustom").hidden=!custom;
   if(document.activeElement!==$("spName")) $("spName").value=S.name||"";
   if(document.activeElement!==$("spW")) $("spW").value=p.w; if(document.activeElement!==$("spD")) $("spD").value=p.d;
+  renderPresets();
   chips("spSizes",SP_SIZES.map(([w,d])=>[`${w}x${d}`,`${w} × ${d} m`]),custom?"":`${p.w}x${p.d}`,"size");
   chips("spH",[...SP_HEIGHTS.map(h=>[h,`${fmt(h)} m`]),...(SP_HEIGHTS.includes(p.h)?[]:[[p.h,`${fmt(p.h)} m`]])],p.h,"h");
   chips("spStairs",SP_STAIRS,custom?[]:p.stairs,"stair",stairIcon);
@@ -2801,6 +2823,64 @@ function openListe(){
   $("lsXlsx").onclick=exportXlsx; sheetMode("liste"); $("planModal").hidden=false; $("planClose").focus();
 }
 
+/* ================= Modèles du mode Simple (partagés en ligne par l'équipe, copie dans le navigateur) ================= */
+const PRE_KEY="praticables-modeles", PRE_API="/api/presets";
+let presets=[], preOnline=null, preDelAsk=null;
+function preRead(){ try{ const o=JSON.parse(localStorage.getItem(PRE_KEY)); return {list:Array.isArray(o?.list)?o.list:[],del:Array.isArray(o?.del)?o.del:[]}; }catch(e){ return {list:[],del:[]}; } }
+function preWrite(list,del){ try{ localStorage.setItem(PRE_KEY,JSON.stringify({list,del})); }catch(e){} }
+const preCfg=p=>{ const c=simpleClean(p); delete c.sig; return c; };
+const preSame=(a,b)=>JSON.stringify(preCfg(a))===JSON.stringify(preCfg(b));
+function preSummary(c){ const g={front:"garde-corps sauf face",all:"garde-corps tout autour",none:"sans garde-corps"}[c.gc];
+  return `${fmt(c.w,c.w%1?1:0)} × ${fmt(c.d,c.d%1?1:0)} m, ${fmt(c.h)} m de haut, ${c.stairs.length?`${c.stairs.length} escalier${c.stairs.length>1?"s":""}`:"sans escalier"}, ${g}${c.bar!=="none"?", barrières":""}`; }
+function renderPresets(){
+  if(!$("spPresets")) return;
+  const cur=S.simple&&!simpleCustom()?S.simple:null;
+  $("spPresets").innerHTML=presets.map(p=>{ const c=simpleClean(p.cfg), on=cur&&preSame(cur,c);
+    return `<div class="sp-pre${on?" on":""}"><button type="button" data-preset="${escH(p.id)}" aria-pressed="${!!on}">${escH(p.name)}<small>${preSummary(c)}${p.unsynced?" · pas encore en ligne":""}</small></button>`
+      +`<button type="button" class="del${preDelAsk===p.id?" ask":""}" data-predel="${escH(p.id)}" aria-label="Supprimer le modèle ${escH(p.name)}">${preDelAsk===p.id?"Supprimer ?":"✕"}</button></div>`; }).join("");
+  $("spPreInfo").textContent=!presets.length?"Enregistre la scène réglée ci-dessous pour la refaire en un clic."
+    :preOnline===false?"Modèles gardés dans ce navigateur : le site ne répond pas, ils seront partagés au prochain essai.":"Modèles partagés avec l'équipe, sur tous les appareils.";
+}
+async function preApi(method,q="",body){ const r=await fetch(PRE_API+q,{method,headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined,cache:"no-store"});
+  if(!r.ok) throw new Error(r.status); return (await r.json()).presets||[]; }
+const preKeep=l=>l.filter(p=>p&&typeof p.id==="string"&&p.cfg&&typeof p.cfg==="object").slice(0,100);
+async function presetsSync(){
+  const loc=preRead(); presets=preKeep(loc.list); renderPresets();
+  try{
+    let list=await preApi("GET");
+    for(const id of loc.del) list=await preApi("DELETE","?id="+encodeURIComponent(id));
+    for(const p of presets.filter(p=>p.unsynced&&!list.some(x=>x.id===p.id))) list=await preApi("POST","",{id:p.id,name:p.name,cfg:p.cfg});
+    presets=preKeep(list); preOnline=true; preWrite(presets,[]);
+  }catch(e){ preOnline=false; }
+  renderPresets();
+}
+async function presetSave(name){
+  const cfg=preCfg(S.simple&&!simpleCustom()?S.simple:simpleGuess()), item={id:newId(),name:name.slice(0,60),t:Date.now(),cfg,unsynced:true};
+  presets=[item,...presets]; preWrite(presets,preRead().del); renderPresets();
+  try{ presets=preKeep(await preApi("POST","",{id:item.id,name:item.name,cfg})); preOnline=true; preWrite(presets,preRead().del); toast(`Modèle « ${item.name} » enregistré pour l'équipe`); }
+  catch(e){ preOnline=false; toast(`Modèle « ${item.name} » enregistré dans ce navigateur`); }
+  renderPresets();
+}
+async function presetDelete(id){
+  const p=presets.find(x=>x.id===id); if(!p) return; presets=presets.filter(x=>x.id!==id);
+  const del=p.unsynced?preRead().del:[...preRead().del,id]; preWrite(presets,del); renderPresets();
+  if(p.unsynced){ toast("Modèle supprimé"); return; }
+  try{ presets=preKeep(await preApi("DELETE","?id="+encodeURIComponent(id))); preOnline=true; preWrite(presets,preRead().del.filter(x=>x!==id)); }catch(e){ preOnline=false; }
+  renderPresets(); toast("Modèle supprimé");
+}
+function presetApply(id){ const p=presets.find(x=>x.id===id); if(!p) return; const c=simpleClean(p.cfg);
+  const auto=!S.name||/^(Scène|Nouvelle scène)( [\d,]+ × [\d,]+ m)?$/.test(S.name)||presets.some(x=>x.name===S.name);
+  simpleSet(c); if(auto){ S.name=p.name; syncInputs(); save(); renderSimple(); } toast(`Modèle « ${p.name} » appliqué · Annuler pour revenir`); }
+$("spPresets").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.preset){ preDelAsk=null; presetApply(b.dataset.preset); return; }
+  if(b.dataset.predel){ if(preDelAsk===b.dataset.predel){ preDelAsk=null; presetDelete(b.dataset.predel); } else { preDelAsk=b.dataset.predel; renderPresets(); setTimeout(()=>{ if(preDelAsk===b.dataset.predel){ preDelAsk=null; renderPresets(); } },4000); } } });
+$("spPreSave").onclick=()=>{ $("spPreForm").hidden=false; $("spPreSave").hidden=true; $("spPreWarn").hidden=!simpleCustom();
+  $("spPreName").value=S.name&&!/^(Scène|Nouvelle scène)( [\d,]+ × [\d,]+ m)?$/.test(S.name)?S.name:""; $("spPreName").placeholder="Ex. Scène animation 6 × 3"; $("spPreName").focus(); };
+const preClose=()=>{ $("spPreForm").hidden=true; $("spPreSave").hidden=false; };
+$("spPreCancel").onclick=preClose;
+$("spPreOk").onclick=()=>{ const n=$("spPreName").value.trim(); if(!n){ $("spPreName").focus(); toast("Donne un nom au modèle"); return; } preClose(); presetSave(n); };
+$("spPreName").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("spPreOk").click(); } if(e.key==="Escape"){ e.stopPropagation(); preClose(); } });
+
 /* ================= Adresse : #p= (lien partagé) et #from= (depuis Salle 3D) ================= */
 async function handleHash(){
   const h=location.hash; let m;
@@ -2824,6 +2904,7 @@ requestAnimationFrame(()=>requestAnimationFrame(()=>{ resize(); fit(); }));
 handleHash().then(h=>{ if(!h) cloudRefreshCurrent(); });
 /* stockage en ligne pas encore branché : le dire tout de suite dans le bloc « En ligne » */
 api("GET").then(r=>{ if(!r.ok){ cloudErr=r.j.error||`erreur ${r.status}`; renderCloud(); } }).catch(()=>{});
+presetsSync();
 /* étiquettes 3D : redessinées une fois la police IBM Plex Mono chargée (sinon elles restent en police de secours) */
 if(document.fonts&&document.fonts.load) document.fonts.load("500 22px 'IBM Plex Mono'").then(()=>{
   for(const m of lblCache.values()){ m.map?.dispose(); m.dispose(); } lblCache.clear(); rebuild(false); }).catch(()=>{});
